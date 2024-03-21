@@ -1,0 +1,101 @@
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+
+db = SQLAlchemy()
+
+# class Usuario(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     username = db.Column(db.String(100), unique=True, nullable=False)
+#     password = db.Column(db.String(100), nullable=False)
+
+class Usuario(db.Model):
+    idUsuario = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nombreUsuario = db.Column(db.String(45), nullable=False, default="")
+    contrasenia = db.Column(db.String(80), nullable=False, default="")
+    rol = db.Column(db.String(30), nullable=False)
+    estatus = db.Column(db.Integer, nullable=False, default=1)
+    telefono = db.Column(db.String(15), nullable=False, default="")
+    lastToken = db.Column(db.String(100), nullable=True)
+    dateLastToken = db.Column(db.DateTime, nullable=True, default=datetime.utcnow)
+
+class LogsUser(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    fecha = db.Column(db.TIMESTAMP, default=datetime.utcnow)
+    procedimiento = db.Column(db.String(255), nullable=False)
+    idUsuario = db.Column(db.Integer, db.ForeignKey('usuario.idUsuario'))
+
+
+class Medida(db.Model):
+    idMedida = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tipoMedida = db.Column(db.String(15))
+
+class Proveedor(db.Model):
+    idProveedor = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nombreProveedor = db.Column(db.String(100), nullable=False, default="")
+    direccion = db.Column(db.String(255), nullable=False, default="")
+    telefono = db.Column(db.String(15), nullable=False, default="")
+    nombreAtiende = db.Column(db.String(100), nullable=False, default="")
+
+    # Relación con la tabla MateriaPrima
+    materia_prima = db.relationship('MateriaPrima', backref='proveedor', lazy=True)
+
+class MateriaPrima(db.Model):
+    idMateriaPrima = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nombreMateria = db.Column(db.String(45), nullable=False, default="")
+    fechaCompra = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    fechaVencimiento = db.Column(db.DateTime)
+    estatus = db.Column(db.Integer, nullable=False, default=1)
+    cantidadExistentes = db.Column(db.Float, nullable=False, default=0.0)
+    precioCompra = db.Column(db.Float, nullable=False, default=0.0)
+    porcentaje = db.Column(db.Integer, nullable=False, default=100)
+    idMedida = db.Column(db.Integer, db.ForeignKey('medida.idMedida'))
+    idProveedor = db.Column(db.Integer, db.ForeignKey('proveedor.idProveedor'))
+
+class Producto(db.Model):
+    idProducto = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nombreProducto = db.Column(db.String(50), nullable=False, default="")
+    cantidadExistentes = db.Column(db.Float, nullable=False, default=0.0)
+    precioVenta = db.Column(db.Float, nullable=False, default=0.0)
+    precioProduccion = db.Column(db.Float, nullable=False, default=0.0)
+    idMedida = db.Column(db.Integer, db.ForeignKey('medida.idMedida'))
+    fotografia = db.Column(db.Text)
+
+    # Relación con la tabla Medida
+    medida = db.relationship('Medida', backref='productos', lazy=True)
+
+class Receta(db.Model):
+    idReceta = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    porcion = db.Column(db.Float, nullable=False, default=0.0)
+    idProducto = db.Column(db.Integer, db.ForeignKey('producto.idProducto'))
+    idMedida = db.Column(db.Integer, db.ForeignKey('medida.idMedida'))
+    idMateriaPrima = db.Column(db.Integer, db.ForeignKey('materia_prima.idMateriaPrima'))
+
+    # Relación con la tabla Producto
+    producto = db.relationship('Producto', backref='creaciones', lazy=True)
+
+    # Relación con la tabla Medida
+    medida = db.relationship('Medida', backref='creaciones', lazy=True)
+
+    # Relación con la tabla MateriaPrima
+    materia_prima = db.relationship('MateriaPrima', backref='creaciones', lazy=True)
+
+class Venta(db.Model):
+    idVenta = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    fechaVenta = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    total = db.Column(db.Float, nullable=False, default=0.0)
+
+class DetalleVenta(db.Model):
+    idDetalleVenta = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    cantidad = db.Column(db.Float, nullable=False, default=0.0)
+    subtotal = db.Column(db.Float, nullable=False, default=0.0)
+    idVenta = db.Column(db.Integer, db.ForeignKey('venta.idVenta'))
+    idProducto = db.Column(db.Integer, db.ForeignKey('producto.idProducto'))
+    idMedida = db.Column(db.Integer, db.ForeignKey('medida.idMedida'))
+
+class Movimiento(db.Model):
+    idMovimiento = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    fechaMovimiento = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    tipoMovimiento = db.Column(db.String(45), nullable=False, default="")
+    monto = db.Column(db.Float, nullable=False, default=0.0)
+    idVenta = db.Column(db.Integer, db.ForeignKey('venta.idVenta'))
+    idMateriaPrima = db.Column(db.Integer, db.ForeignKey('materia_prima.idMateriaPrima'))

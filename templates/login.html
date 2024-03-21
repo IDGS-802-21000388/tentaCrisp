@@ -1,0 +1,40 @@
+{% extends "layoutLogin.html" %}
+{% from "_macros.html" import render_field %}
+{% block content %}
+<div class="login-container">
+    <div class="login">
+        <img src="../static/img/icono.png" alt="Logo" class="center-image" />
+        <h1 class="text-center">
+            Iniciar Sesión
+        </h1>
+        <hr>
+        <form action="/" method="POST">
+            <div class="form-group" id="divUsuario">
+                <label class="form-label" for="idUsuario">
+                    Usuario
+                </label>
+                {{ render_field(form.nombreUsuario, class="form-control") }}
+                <div class="invalid-feedback d-none" id="divMensajeUsuario">
+                    Ingrese su nombre de usuario.
+                </div>
+            </div>
+            <div class="form-group" id="divContrasenia">
+                <label class="form-label" for="idPassword">
+                    Contraseña
+                </label>
+                {{ render_field(form.contrasenia, class="form-control") }}
+                <div class="invalid-feedback d-none" id="divMensajeContrasenia">
+                    Ingresa tu contraseña.
+                </div>
+            </div>
+            <div style="margin: 0 auto; width: fit-content; margin-bottom:10px">
+                {{ form.recaptcha }}
+            </div>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn btn-success w-100" id="btnLogin">
+                Iniciar Sesión
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

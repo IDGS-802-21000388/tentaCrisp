@@ -1,0 +1,15 @@
+    .sales-data {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sales-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 5px;
+    }
+
+    .name {
+        font-weight: bold;
+    }

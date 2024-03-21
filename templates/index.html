@@ -1,0 +1,111 @@
+{% extends "layout.html" %}
+{% from "_macros.html" import render_field %}
+
+{% block content %}
+    <div class="container">
+        <div class="row">
+            <form action="{{ url_for('logout') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{csrf_token()}}" />
+                <button type="submit" class="btn btn-danger">Cerrar sesión</button>
+            </form>            
+        </div>
+    </div>
+    <!-- Agrega un botón para abrir el modal de productos nuevos -->
+    <div class="row mt-3">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalProductosNuevos">
+            Agregar nueva galleta
+        </button>
+    </div>
+    
+    <!-- Modal Productos Nuevos -->
+    <div class="modal fade" id="modalProductosNuevos" tabindex="-1" aria-labelledby="modalProductosNuevosLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <!-- Contenido del modal -->
+            <div class="modal-content" id="modalProductosNuevos">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="modalProductoNuevosLabel"><i class="fa-solid fa-cookie-bite fa-lg" style="color: #826455;"></i> Agregar nueva galleta</h1>
+                </div>
+                <form class="needs-validation" id="formDataProductosNuevos" name="formDataProductosNuevos" method="POST">
+                    <div class="modal-body" id="productoDetails">
+                        <div class="container">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3 row">
+                                        <label id="lblNuevaGalleta" for="txtNuevaGalleta" class="form-label col-sm-4">Nombre de la galleta:</label>
+                                        <div class="col-sm-8">
+                                            <input type="text" id="txtNuevaGalleta" class="form-control" placeholder="Nombre de la galleta">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3 row">
+                                        <label id="lblPrecioProdGalleta" for="txtNuevaGalleta" class="form-label col-sm-4">Precio de producción:</label>
+                                        <div class="col-sm-8">
+                                            <input type="text" id="txtPrecioProdGalleta" class="form-control" placeholder="Precio de producción">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3 row">
+                                        <label id="lblPrecioVentaGalleta" for="txtNuevaGalleta" class="form-label col-sm-4">Precio de venta:</label>
+                                        <div class="col-sm-8">
+                                            <input type="text" id="txtPrecioVentaGalleta" class="form-control" placeholder="Precio de venta">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3 row">
+                                        <div class="row">
+                                            <div class="col">
+                                                <label id="lblFotografiaInput" for="fotografiaInput" class="form-label">Fotografía:</label>
+                                                <input type="file" id="fotografiaInput" class="btn btn-primary" onchange="moduloProducto.convertirPDF();">
+                                                <textarea id="base64Output" class="col-lg-8" rows="10" cols="50" style="display: none;"></textarea>
+                                            </div>
+                                            <div class="col">
+                                                <embed id="fotografia" src="" type="application/pdf" width="100px" height="100px">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3 row">
+                                    <div id="gelletaHorneada" class="col">
+                                        <input type="text" id="txtIdProducto" class="form-control" style="display: none">
+                                        <div class="d-flex">
+                                            <select id="txtIngredientes" class="form-select" aria-label="Default select example">
+                                                <!-- Se crea de manera dinámica -->
+                                            </select>
+                                            <div class="form-floating ms-3">
+                                                <input type="number" class="form-control" id="txtCantidadPorcion">
+                                                <label for="floatingInput" style="color:black">Cantidad de porción en KG:</label>
+                                            </div>
+                                        </div>
+                                        <div class="form-floating mb-3 d-flex justify-content-end" style="margin-top: 15px">
+                                            <button id="btnIngredientes" type="button" class="btn btn-success" onclick="moduloProducto.llenarTablaIngredientes()">Agregar Ingrediente</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3 row">
+                                    <div id="gelletaHorneada" class="col">
+                                        <table id="tblIngredientes" class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">Ingrediente</th>
+                                                    <th scope="col">Cantidad</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tbodyIngredientes">
+                                                <tr>
+                                                    <!-- se genera dinamico -->
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        <button id="btnGuardarNuevoPermiso" type="button" class="btn btn-success" onclick="moduloProducto.guardarGalleta()">Guardar nueva galleta</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
