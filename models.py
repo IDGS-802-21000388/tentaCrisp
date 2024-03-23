@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from flask_login import UserMixin
 
 db = SQLAlchemy()
 
@@ -8,15 +9,19 @@ db = SQLAlchemy()
 #     username = db.Column(db.String(100), unique=True, nullable=False)
 #     password = db.Column(db.String(100), nullable=False)
 
-class Usuario(db.Model):
+class Usuario(db.Model, UserMixin):
     idUsuario = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nombreUsuario = db.Column(db.String(45), nullable=False, default="")
-    contrasenia = db.Column(db.String(80), nullable=False, default="")
+    contrasenia = db.Column(db.String(200), nullable=False, default="")
     rol = db.Column(db.String(30), nullable=False)
     estatus = db.Column(db.Integer, nullable=False, default=1)
     telefono = db.Column(db.String(15), nullable=False, default="")
     lastToken = db.Column(db.String(100), nullable=True)
     dateLastToken = db.Column(db.DateTime, nullable=True, default=datetime.utcnow)
+    def is_active(self):
+        return self.estatus != 0
+    def get_id(self):
+        return str(self.idUsuario) 
 
 class LogsUser(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -42,14 +47,18 @@ class Proveedor(db.Model):
 class MateriaPrima(db.Model):
     idMateriaPrima = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nombreMateria = db.Column(db.String(45), nullable=False, default="")
-    fechaCompra = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    fechaVencimiento = db.Column(db.DateTime)
     estatus = db.Column(db.Integer, nullable=False, default=1)
-    cantidadExistentes = db.Column(db.Float, nullable=False, default=0.0)
     precioCompra = db.Column(db.Float, nullable=False, default=0.0)
     porcentaje = db.Column(db.Integer, nullable=False, default=100)
     idMedida = db.Column(db.Integer, db.ForeignKey('medida.idMedida'))
     idProveedor = db.Column(db.Integer, db.ForeignKey('proveedor.idProveedor'))
+
+class Detalle_materia_prima(db.Model):
+    idDetalle_materia_prima = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    fechaCompra = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    fechaVencimiento = db.Column(db.DateTime)
+    cantidadExistentes = db.Column(db.Float, nullable=False, default=0.0)
+    idMateriaPrima = db.Column(db.Integer, db.ForeignKey('materia_prima.idMateriaPrima'))
 
 class Producto(db.Model):
     idProducto = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -63,6 +72,18 @@ class Producto(db.Model):
     # Relación con la tabla Medida
     medida = db.relationship('Medida', backref='productos', lazy=True)
 
+class Detalle_producto(db.Model):
+    idDetalle_producto = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    fechaVencimiento = db.Column(db.DateTime)
+    cantidadExistentes = db.Column(db.Float, nullable=False, default=0.0)
+    idProducto = db.Column(db.Integer, db.ForeignKey('producto.idProducto'))
+
+class merma(db.Model):
+    idMerma = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    cantidadMerma= db.Column(db.Float, nullable=False, default=0.0)
+    idProducto = db.Column(db.Integer, db.ForeignKey('producto.idProducto'))
+    idMateriaPrima = db.Column(db.Integer, db.ForeignKey('materia_prima.idMateriaPrima'))
+
 class Receta(db.Model):
     idReceta = db.Column(db.Integer, primary_key=True, autoincrement=True)
     porcion = db.Column(db.Float, nullable=False, default=0.0)
@@ -71,13 +92,13 @@ class Receta(db.Model):
     idMateriaPrima = db.Column(db.Integer, db.ForeignKey('materia_prima.idMateriaPrima'))
 
     # Relación con la tabla Producto
-    producto = db.relationship('Producto', backref='creaciones', lazy=True)
+    # producto = db.relationship('Producto', backref='receta', lazy=True)
 
     # Relación con la tabla Medida
-    medida = db.relationship('Medida', backref='creaciones', lazy=True)
+    medida = db.relationship('Medida', backref='receta', lazy=True)
 
     # Relación con la tabla MateriaPrima
-    materia_prima = db.relationship('MateriaPrima', backref='creaciones', lazy=True)
+    materia_prima = db.relationship('MateriaPrima', backref='receta', lazy=True)
 
 class Venta(db.Model):
     idVenta = db.Column(db.Integer, primary_key=True, autoincrement=True)

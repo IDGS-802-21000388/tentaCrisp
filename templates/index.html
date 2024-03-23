@@ -16,6 +16,10 @@
             Agregar nueva galleta
         </button>
     </div>
+    <div class="row mt-3">
+        <p>Bienvenido, {{ current_user.nombreUsuario }}</p>
+        <p>Tu ultimo inicio de sesión fue {{ current_user.dateLastToken }}</p>
+    </div>
     
     <!-- Modal Productos Nuevos -->
     <div class="modal fade" id="modalProductosNuevos" tabindex="-1" aria-labelledby="modalProductosNuevosLabel" aria-hidden="true">

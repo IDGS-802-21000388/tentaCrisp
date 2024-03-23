@@ -1,15 +1,15 @@
 from flask import Flask, request, render_template, flash, g, redirect, url_for, session, jsonify
 from flask_wtf.csrf import CSRFProtect
 from config import DevelopmentConfig
-import forms
+import forms, ssl
 from models import db, Usuario
 from sqlalchemy import func
 from functools import wraps
 from flask_cors import CORS
 from flask_wtf.recaptcha import Recaptcha
-import ssl
 from datetime import datetime
-from flask import session
+from flask_login import LoginManager, login_user, logout_user, login_required, login_manager
+from werkzeug.security import generate_password_hash, check_password_hash
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -17,21 +17,23 @@ app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
 csrf = CSRFProtect()
 CORS(app, resources={r"/*": {"origins": app.config['CORS_ORIGINS']}})
+login_manager = LoginManager()
+login_manager.init_app(app)
+#login_manager.login_view = 'login'
+# recaptcha = Recaptcha(app)
 
-recaptcha = Recaptcha(app)
+@login_manager.user_loader
+def load_user(user_id):
+    return Usuario.query.get(int(user_id))
 
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'),404
 
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        print(session)
-        if 'logged_in' not in session:
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
+@login_manager.unauthorized_handler
+def unauthorized():
+    #flash('Por favor, inicia sesión para acceder a esta página.', 'warning')
+    return redirect(url_for('login'))
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -43,8 +45,8 @@ def login():
         contrasenia = usuario_form.contrasenia.data
 
         user = Usuario.query.filter_by(nombreUsuario=nombreUsuario).first()
-        if user and user.contrasenia == contrasenia:
-            session['logged_in'] = True
+        if user and check_password_hash(user.contrasenia, contrasenia):
+            login_user(user)
             #flash('Inicio de sesión exitoso', 'success')
             user.dateLastToken = datetime.utcnow()
             db.session.commit()
@@ -56,8 +58,9 @@ def login():
     return render_template('login.html', form=usuario_form)
 
 @app.route('/logout', methods=['POST'])
+@login_required
 def logout():
-    session.clear()
+    logout_user()
     return redirect(url_for('login'))
 
 @app.route('/index')
