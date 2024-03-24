@@ -1,0 +1,367 @@
+
+/* 
+    Created on : 18 nov. 2023, 21:21:58
+    Author     : codeware
+*/
+
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400&family=Quicksand:wght@400;700&display=swap");
+
+*{
+    margin: 0px;
+    padding: 0px;
+    outline: none;
+    border: none;
+    text-decoration: none;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+    color: #2F0D0B;
+    list-style-type: none;
+}
+
+nav ul {
+    width: 60px;
+    padding: 0; 
+}
+
+body{
+    background: white;
+}
+nav {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    height: 100%;
+    background: #F9E79F;
+    width: 90px;
+    overflow: hidden;
+    transition: width 0.2s linear;
+    box-shadow: 0 20px 20px rgba(0, 0, 0, 1);
+}
+ .logo{
+    text-align: center;
+    display: flex;
+    transition: all 0.5s ease;
+    margin: 2px 0 0 2px;
+ }
+
+.logo img{
+    width: 65px;
+    height: 65px;
+    border-radius: 40% ;
+}
+
+
+.titule{
+    position: relative;
+    /*top: 12px;*/
+    margin-left: 10px;
+    text-decoration: none;
+}
+
+.logo span{
+    font-weight: bold;
+    padding: 15px;
+    font-size: 18px;
+    text-transform: uppercase;
+}
+
+nav a{
+    position: relative;
+    font-size: 14px;
+    display: table;
+    width: 300px;
+    padding: 10px;
+    text-decoration: none; 
+}
+
+span {
+        text-decoration: none;
+    }
+    
+.fas{
+    position: relative;
+    width: 70px;
+    height: 40px;
+    top: 14px;
+    font-size: 20px;
+    text-align: center;
+
+}
+
+.nav-item{
+    position: relative;
+    top: 12px;
+    margin-left: 10px;
+    text-decoration: none;
+}
+
+a:hover{
+    background: #eee;
+}
+
+nav:hover{
+    width: 215px;
+    transition: all 0.5s ease;
+}
+
+.logout{
+    position: absolute;
+    bottom: 0;
+}
+
+#contenedorPrincipal {
+    width: auto;
+    margin-left: 90px !important;
+    padding: 20px !important;
+    transition: margin-left 0.5s ease !important;
+}
+
+#bodyTabla{
+    height: 100vh !important;
+    margin: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+
+}
+
+#containerProductos,#containerUsuarios {
+    width: 80% !important;
+    height: 80% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+.table-container {
+    white-space: nowrap !important;
+}
+
+.button-container {
+    margin-top: 10px !important;
+    align-self: flex-end !important;
+}
+
+#txtMedida {
+    border: none !important;
+    font-weight: bold !important;
+    background-color: transparent !important;
+
+}
+
+#tblCabecera {
+
+    color: #573B2F !important;
+    font-size: 14px !important;
+}
+
+#idOption {
+    font-weight: bold !important;
+    color: #573B2F !important;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f1c896 !important;
+    color: #fff !important;
+}
+
+a.page-link[tabindex="0"] {
+    background-color: white !important;
+    color: #000 !important;
+    font-weight: bold !important;
+    border-color: lightgrey !important;
+    cursor: pointer !important;
+    width: 100px !important;
+    text-align: center;
+}
+
+li.paginate_button.next:not(.disabled) a.page-link[data-dt-idx="next"] {
+    background-color: #fff !important;
+    color: #000 !important;
+    font-weight: bold !important;
+    cursor: pointer !important;
+}
+
+li.paginate_button.previous:not(.disabled) a.page-link[data-dt-idx="previous"] {
+    background-color: #fff !important;
+    color: #000 !important;
+    font-weight: bold !important;
+    cursor: pointer !important;
+}
+
+#gelletaHorneada {
+    margin-bottom: 10% !important;
+    margin-left: 10% !important;
+    margin-right: 10% !important;
+}
+
+#txtNuevaGalleta, #txtEditarGalleta, #txtPrecioProdGalleta, #txtPrecioProdEditar, #txtPrecioVentaGalleta, #txtPrecioVentaEditar, #txtCantidadExisEditar {
+    width: 200px !important; 
+    height: 35px !important;
+    margin-left: 10px !important;
+}
+
+#lblNuevaGalleta, #lblPrecioProdGalleta, #lblPrecioVentaGalleta {
+    margin-top: 6px !important;
+    font-size: 14.5px;
+}
+
+.btnEnd{
+    display: flex;
+    justify-content: end;
+}
+
+#agregarGalletaNueva{
+    margin-right: 10px;
+}
+
+#tblProductos{
+    margin-top: 30px;
+}
+
+label{
+    font-size: 14.5px !important;
+}
+
+.btnEliminar, #btnModificar, #btnEditar{
+    background: transparent;
+}
+
+.imagen-pequena {
+        width: 100px;    
+        height: auto; 
+    }
+    
+#fotografia, #fotografiaEditar{
+    margin-top: -25px;
+}
+
+#fotografiaInput, #fotografiaInputEditar{
+    background: transparent;
+    border-color: transparent;
+    color: #573B2F;
+}
+
+input[type="file"] {
+    font-size: 14px;
+    text-align: start;
+}
+
+#swal2-content{
+    color: black;
+}
+
+#txtCantidadExisEditar{
+    margin-left: 20px !important;
+}
+
+#modalProductosNuevos .modal-dialog {
+    max-width: 80% !important;
+    width: auto !important;
+}
+
+#lblFotografiaInput, #lblPrecioVentaGalleta{
+    margin-left: -70px;
+}
+
+#fotografia{
+      margin-left: -10px !important;
+}
+
+#fotografiaInput{
+    margin-left: 10px;
+    margin-top: -65px;
+}
+
+#lblFotografiaInput{
+    margin-top: 30px;
+}
+
+#tblIngredientes{
+    margin-top: -100px;
+}
+
+#txtMedidaMaterial, #txtPorcentajeMaterial, #txtPrecioCompra, #txtCantidadMaterial, #txtFechaVenciMaterial, #txtFechaCompraMaterial, #txtNobreMaterial {
+    width: 200px !important;
+    height: 35px !important;
+    margin-left: 10px !important;
+}
+
+#lblNombre, #lblFeCompra, #lblFeVenta, #lblCantidad,#lblPreCompra,#lblPorcentaje,#lblMedida {
+    margin-top: 6px !important;
+    font-size: 14.5px;
+}
+/*Inicio de Modulo de Usuario*/
+#lblCorreo, #lblContraseña, #lblRol,#lblTelefono {
+    margin-top: 6px !important;
+    font-size: 14.5px;
+}
+#txtCorreo, #txtContraseña, #txtRol,#txtTelefono{
+    width: 200px !important;
+    height: 35px !important;
+    margin-left: 10px !important;
+}
+
+#txtCorreoEditar, #txtContraseñaEditar, #txtRolEditar,#txtTelefonoEditar{
+    width: 200px !important;
+    height: 35px !important;
+    margin-left: 10px !important;
+}
+
+#registroUser {
+    margin-bottom: 10% !important;
+    margin-left: 10% !important;
+    margin-right: 10% !important;
+}
+/*Fin de Modulo de Usuario*/
+
+#materialPrima {
+    margin-bottom: 10% !important;
+    margin-left: 10% !important;
+    margin-right: 10% !important;
+}
+
+#bodyTabla, #bodyTablaMaterial{
+    height: 100vh !important;
+    margin: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+
+}
+
+#containerProductos, #containerMateral {
+    width: 80% !important;
+    height: 80% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+#tblProductos, #tblMaterial,#tblUsuario{
+    margin-top: 30px;
+}
+
+#txtMedidaMaterialEditar, #txtPorcentajeMaterialEditar, #txtPrecioCompraEditar, #txtCantidadMaterialEditar, #txtFechaVenciMaterialEditar, #txtFechaCompraMaterialEditar, #txtNobreMaterialEditar {
+    width: 200px !important;
+    height: 35px !important;
+    margin-left: 10px !important;
+}
+input[type="number"].input-medida {
+  width: 70px;
+}
+
+#titleP{
+  font-size: 30px;
+  text-align: center;
+  font-weight: bold;
+}
+
+#condiciones {
+        text-align: center;
+        font-size: smaller;
+        color: green;
+        margin-top: 5px;
+    }
