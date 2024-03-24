@@ -30,7 +30,6 @@ def load_user(user_id):
 def page_not_found(e):
     return render_template("404.html"),404
 
-
 @login_manager.unauthorized_handler
 def unauthorized():
     #flash('Por favor, inicia sesión para acceder a esta página.', 'warning')
@@ -50,7 +49,7 @@ def login():
             #flash('Inicio de sesión exitoso', 'success')
             user.dateLastToken = datetime.utcnow()
             db.session.commit()
-            return jsonify({'success': True, 'redirect': url_for('main')})
+            return jsonify({'success': True, 'redirect': url_for('index')})
         else:
             #flash('Usuario o contraseña inválidos', 'error')
             return jsonify({'success': False, 'error': 'Usuario o contraseña inválidos'})
@@ -63,10 +62,10 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-@app.route('/main')
+@app.route('/index')
 @login_required
 def index():
-    return render_template('main.html')
+    return render_template('index.html')
 
 @app.route("/inventario")
 def inventario():
@@ -101,6 +100,10 @@ def inventario():
         })
 
     return render_template("vista_Inventario.html", form=inventario, datos_materia_prima=materia_prima_json, nombre=nombre, precio=precio, cantidad=cantidad, tipo_compra=tipo_compra, fechaVen=fechaVen, fechaCom=fechaCom, forma_compra=forma_compra)
+
+@app.route('/recetas')
+def recetas():
+    return render_template('receta.html')
 
 
 if __name__ == '__main__':
