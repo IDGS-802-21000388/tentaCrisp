@@ -25,3 +25,9 @@ class InventarioForm(Form):
     fechaCom = DateField('Fecha de Compra', validators=[validators.DataRequired()])
     tipo_compra = SelectField('Tipo de compra', choices=[('bulto', 'Bulto'), ('caja', 'Caja'), ('paquete', 'Paquete'), ('unidad', 'Unidad')])
     forma_compra = SelectField('Forma de compra', choices=[('Proveedor', 'Proveedor'), ('Manual', 'Manual')])
+
+class ProveedorForm(Form):
+    nombreProveedor = StringField('Nombre Proveedor', validators=[DataRequired(), Length(max=100)])
+    direccion = StringField('Dirección', validators=[DataRequired(), Length(max=255)])
+    telefono = StringField('Teléfono', validators=[DataRequired(), Length(max=15)])
+    nombreAtiende = StringField('Nombre del encargado', validators=[DataRequired(), Length(max=100)])

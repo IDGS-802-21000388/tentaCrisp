@@ -2,12 +2,14 @@ from flask import Flask, request, render_template, flash, g, redirect, url_for, 
 from flask_wtf.csrf import CSRFProtect
 from config import DevelopmentConfig
 import forms, ssl
-from models import db, Usuario, MateriaPrima
+from models import db, Usuario, MateriaPrima, Proveedor
 from sqlalchemy import func
 from functools import wraps
 from flask_cors import CORS
 from flask_wtf.recaptcha import Recaptcha
 from datetime import datetime
+import base64
+import json
 from flask_login import LoginManager, login_user, logout_user, login_required, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -44,6 +46,7 @@ def login():
         nombreUsuario = usuario_form.nombreUsuario.data
         contrasenia = usuario_form.contrasenia.data
         user = Usuario.query.filter_by(nombreUsuario=nombreUsuario).first()
+        
         if user and check_password_hash(user.contrasenia, contrasenia):
             login_user(user)
             #flash('Inicio de sesión exitoso', 'success')
@@ -100,6 +103,83 @@ def inventario():
         })
 
     return render_template("vista_Inventario.html", form=inventario, datos_materia_prima=materia_prima_json, nombre=nombre, precio=precio, cantidad=cantidad, tipo_compra=tipo_compra, fechaVen=fechaVen, fechaCom=fechaCom, forma_compra=forma_compra)
+
+@app.route("/proveedor", methods=['GET', 'POST'])
+def proveedor():
+    nombreProveedor = ""
+    direccion = ""
+    telefono = ""
+    nombreAtiende = ""
+    provedor = forms.ProveedorForm(request.form)
+
+    if request.method == 'POST':
+        if provedor.validate():
+            nombreProveedor = provedor.nombreProveedor.data
+            direccion = provedor.direccion.data
+            telefono = provedor.telefono.data
+            nombreAtiende = provedor.nombreAtiende.data
+
+            nuevo_proveedor = Proveedor(nombreProveedor=nombreProveedor, direccion=direccion, telefono=telefono, nombreAtiende=nombreAtiende)
+            
+            try:
+                db.session.add(nuevo_proveedor)
+                db.session.commit()
+                mensaje = "Proveedor agregado correctamente."
+                flash(mensaje)
+            except Exception as e:
+                mensaje = "Error al agregar el proveedor a la base de datos: " + str(e)
+                flash(mensaje)
+        else:
+            errores = {campo.name: campo.errors for campo in provedor}
+            return jsonify({'success': False, 'errors': errores})
+
+    datos_proveedor = Proveedor.query.all()
+    proveedores = [{
+        'idProveedor': proveedor.idProveedor,
+        'nombreProveedor': proveedor.nombreProveedor,
+        'direccion': proveedor.direccion,
+        'telefono': proveedor.telefono,
+        'nombreAtiende': proveedor.nombreAtiende
+    } for proveedor in datos_proveedor]
+
+    return render_template("provedor.html", form=provedor, proveedores=proveedores)
+
+@app.route("/eliminar_proveedor", methods=['POST'])
+def eliminar_proveedor():
+    id_proveedor = int(request.form.get("id"))
+    print("HOLA ", id_proveedor)
+    proveedor = Proveedor.query.get(id_proveedor)
+    if proveedor:
+        db.session.delete(proveedor)
+        db.session.commit()
+        mensaje = "Proveedor eliminado correctamente."
+        flash(mensaje)
+    else:
+        mensaje = "Proveedor no encontrado."
+        flash(mensaje)
+    return redirect(url_for('proveedor'))
+
+@app.route("/obtener_datos_proveedor", methods=['GET'])
+def obtener_datos_proveedor():
+    id_proveedor = int(request.args.get("id"))
+    proveedor = Proveedor.query.get(id_proveedor)
+    if proveedor:
+        # Imprime los datos del proveedor para verificar que se estén pasando correctamente
+        print("Datos del proveedor:", proveedor.idProveedor, proveedor.nombreProveedor, proveedor.direccion, proveedor.telefono, proveedor.nombreAtiende)
+        # Devuelve los datos del proveedor como respuesta a la solicitud AJAX
+        return jsonify({
+            'idProveedor': proveedor.idProveedor,
+            'nombreProveedor': proveedor.nombreProveedor,
+            'direccion': proveedor.direccion,
+            'telefono': proveedor.telefono,
+            'nombreAtiende': proveedor.nombreAtiende
+        })
+    else:
+        # Maneja el caso donde el proveedor no se encuentra
+        return jsonify({'error': 'Proveedor no encontrado'}), 404
+
+
+
 
 @app.route('/recetas')
 def recetas():
