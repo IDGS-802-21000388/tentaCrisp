@@ -1,6 +1,5 @@
 
 /* 
-    Created on : 18 nov. 2023, 21:21:58
     Author     : codeware
 */
 
@@ -196,10 +195,11 @@ li.paginate_button.previous:not(.disabled) a.page-link[data-dt-idx="previous"] {
     margin-right: 10% !important;
 }
 
-#txtNuevaGalleta, #txtEditarGalleta, #txtPrecioProdGalleta, #txtPrecioProdEditar, #txtPrecioVentaGalleta, #txtPrecioVentaEditar, #txtCantidadExisEditar {
+#nombre_galleta, #precio_produccion,#precio_venta, #txtPrecioProdGalleta, #txtPrecioProdEditar, #txtPrecioVentaGalleta, #txtPrecioVentaEditar, #txtCantidadExisEditar {
     width: 200px !important; 
     height: 35px !important;
     margin-left: 10px !important;
+    font-size: 14px;
 }
 
 #lblNuevaGalleta, #lblPrecioProdGalleta, #lblPrecioVentaGalleta {
@@ -224,7 +224,7 @@ label{
     font-size: 14.5px !important;
 }
 
-.btnEliminar, #btnModificar, #btnEditar{
+.btnEliminar, .btnModificar, .btnEditar{
     background: transparent;
 }
 
@@ -261,6 +261,11 @@ input[type="file"] {
     width: auto !important;
 }
 
+#modalProductosEditar .modal-dialog {
+    max-width: 80% !important;
+    width: auto !important;
+}
+
 #lblFotografiaInput, #lblPrecioVentaGalleta{
     margin-left: -70px;
 }
@@ -270,8 +275,8 @@ input[type="file"] {
 }
 
 #fotografiaInput{
-    margin-left: 10px;
-    margin-top: -65px;
+    margin-left: 15px;
+    margin-top: -35px;
 }
 
 #lblFotografiaInput{
@@ -365,3 +370,10 @@ input[type="number"].input-medida {
         color: green;
         margin-top: 5px;
     }
+
+.imgPreviewEditar{
+    display: flex;
+    justify-content: center;
+    margin-top: -32px;
+    margin-bottom: 10px;
+}

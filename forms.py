@@ -1,14 +1,13 @@
 from flask_wtf import FlaskForm
 from wtforms import Form
 from wtforms import StringField, PasswordField
-from wtforms.validators import DataRequired, Length
-from flask_wtf.recaptcha import RecaptchaField
-from wtforms import validators ,DateField, SelectField
+from wtforms.validators import DataRequired, Length, InputRequired
+from wtforms import validators ,DateField, SelectField, DecimalField, FileField
+
 
 class UsuarioForm(FlaskForm):
     nombreUsuario = StringField('Usuario', validators=[DataRequired(), Length(min=4, max=100)])
     contrasenia = PasswordField('Contraseña', validators=[DataRequired(), Length(min=6, max=100)])
-    #recaptcha = RecaptchaField()
 
 class InventarioForm(Form):
     
@@ -25,3 +24,11 @@ class InventarioForm(Form):
     fechaCom = DateField('Fecha de Compra', validators=[validators.DataRequired()])
     tipo_compra = SelectField('Tipo de compra', choices=[('bulto', 'Bulto'), ('caja', 'Caja'), ('paquete', 'Paquete'), ('unidad', 'Unidad')])
     forma_compra = SelectField('Forma de compra', choices=[('Proveedor', 'Proveedor'), ('Manual', 'Manual')])
+
+class NuevaGalletaForm(FlaskForm):
+    nombre_galleta = StringField('Nombre de la galleta', validators=[DataRequired(message='Favor de ingresar el nombre'), Length(min=1, max=40, message='Ingresa un nombre válido')])
+    precio_produccion = DecimalField('Precio de producción', validators=[DataRequired(message='Favor de ingresar el precio de producción')])
+    precio_venta = DecimalField('Precio de venta', validators=[DataRequired(message='Favor de ingresar el precio de venta')])
+    fotografia = FileField('Fotografía')
+    fechaCaducidad = DateField('Fecha de Caducidad', validators=[validators.DataRequired()])
+

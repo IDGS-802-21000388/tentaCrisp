@@ -2,12 +2,23 @@
 {% from "_macros.html" import render_field %}
 
 {% block content %}
-<center>
-    <video id="videoPlayer" width="950" height="540"controls autoplay loopWx| >
-        <source src="../static/img/banner.mp4" type="video/mp4">
-        Tu navegador no soporta el elemento de video.
-    </video>
-</center>
+    <center>
+        <video id="videoPlayer" width="900" height="500" controls autoplay loop>
+            <source src="../static/img/banner.mp4" type="video/mp4">
+            Tu navegador no soporta el elemento de video.
+        </video>
+    </center>
 
-    
+<script>
+    $(document).ready(function() {
+        var nombreUsuario = "{{ current_user.nombreUsuario }}";
+        var fechaUltimaConexion = "{{ current_user.dateLastToken }}";
+        Swal.fire({
+            title: 'Bienvenido',
+            text: 'Hola, ' + nombreUsuario + '! \n Tu último inicio de sesión fue el ' + fechaUltimaConexion,
+            icon: 'info',
+            confirmButtonText: 'Ok'
+        });
+    });
+</script>
 {% endblock %}
