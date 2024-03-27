@@ -11,6 +11,7 @@ db = SQLAlchemy()
 
 class Usuario(db.Model, UserMixin):
     idUsuario = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nombre=db.Column(db.String(45), nullable=False, default=None)
     nombreUsuario = db.Column(db.String(45), nullable=False, default="")
     contrasenia = db.Column(db.String(200), nullable=False, default="")
     rol = db.Column(db.String(30), nullable=False)

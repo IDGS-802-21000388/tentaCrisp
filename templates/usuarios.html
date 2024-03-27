@@ -1,0 +1,155 @@
+{% extends "layout.html" %}
+{% from "_macros.html" import render_field %}
+
+{% block content %}
+<h1>Usuarios</h1>
+
+    
+        <div id="bodyTabla">
+            <div id="#containerUsuarios" style="width: -moz-available;">
+                <div class="table-container">
+                    <table id="tblUsuario" class="table table-hover table-sm">
+                        <thead>
+                            <tr>
+                                <th id="tblCabecera">Nombre</th>
+                                <th id="tblCabecera">Usuario</th>
+                                <th id="tblCabecera">Contraseña</th>
+                                <th id="tblCabecera">Rol</th>
+                                <th id="tblCabecera">Estatus</th>
+                                <th></th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for usuario in usuarios %}
+                    <tr>
+                        <td>{{ usuario.nombre }}</td>
+                        <td>{{ usuario.nombreUsuario }}</td>
+                        <td>**********</td>
+                        <td>{{ usuario.rol }}</td>
+                        <td>{{ usuario.estatus }}</td>
+                        <td>
+                            <form action="{{ url_for('cambiar_estado_usuario', id_usuario=usuario.idUsuario) }}" method="POST">
+                                {{ form.csrf_token }}
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btnEliminar" onclick="return confirm('¿Estás seguro de que deseas eliminar este usuario?')">
+                                    <i class="fa-solid fa-trash" style="color: #c12525;"></i>
+                                </button>
+                            </form>
+                        </td>
+                        
+                        <td><button class="btnEditar" data-idUsuario="{{usuario.idUsuario}}" data-nombre="{{usuario.nombre}}" data-nombreusuario="{{usuario.nombreUsuario}}" data-contrasenia="{{usuario.contrasenia}}" data-rol="{{usuario.rol}}" data-telefono="{{usuario.telefono}}"><i class="fa-solid fa-pen-to-square" style="color: #57351f;"></i></button></td>
+
+                    </tr>
+                    {% endfor %}
+                        </tbody>
+                    </table>        
+                </div>
+        
+                <div class="modal fade" id="modalUsuario" tabindex="-1" aria-labelledby="modalUsuarioLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content" id="modalUsuarioContent">
+                            <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="modalUsuarioLabel"><i class="fa-solid fa-cookie-bite fa-lg" style="color: #826455;"></i> Agregar Usuario Nuevo</h1>
+                            </div>
+                            <div class="modal-body">
+                                
+                                <form action="{{ url_for('usuarios') }}" method="POST" novalidate>
+                                    {{ form.csrf_token }}
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <div id="passwordWarning" class="alert alert-danger" >
+                                        La contraseña debe tener al menos una mayúscula, una minúscula, un número, un carácter especial y tener una longitud mínima de 8 caracteres.
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            {{ render_field(form.nombre, class="form-control") }}
+                                        </div>
+                                        <div class="col">
+                                            {{ render_field(form.nombreUsuario, class="form-control") }}
+                                        </div>
+                                        
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            {{ render_field(form.contrasenia, class="form-control") }}
+                                        </div>
+                                        <div class="col">
+                                            {{ render_field(form.rol, class="form-control") }}
+                                        </div>
+                                      
+                                    </div>
+                                    <div class="row">
+                                        
+                                        <div class="col">
+                                            {{ render_field(form.telefono, class="form-control") }}
+                                        </div>
+                                    </div>
+                                
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                <button id="btnSaveUser" type="submit" class="btn btn-success">Guardar Usuario</button>
+                            </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                
+        
+                <div class="modal fade" id="modalUsuarioEditar" tabindex="-1" aria-labelledby="modalUsuarioEditarsLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content" id="modalUsuarioEditarContent">
+                            <div class="modal-header">
+                                <h1 class="modal-title fs-5"><i class="fa-solid fa-cookie-bite fa-lg" style="color: #826455;"></i> Editar Usuario</h1>
+                            </div>
+                            <div class="modal-body">
+                                <form action="{{ url_for('editar_usuario') }}" method="POST" novalidate>
+                                    {{ form.csrf_token }}
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input  type="hidden" id="editIdUsuario" name="editIdUsuario">
+                                    <div id="passwordWarning" class="alert alert-danger" >
+                                        La contraseña debe tener al menos una mayúscula, una minúscula, un número, un carácter especial y tener una longitud mínima de 8 caracteres.
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            {{ render_field(form.nombre, class="form-control", id="editNombre") }}
+                                        </div>
+                                        <div class="col">
+                                            {{ render_field(form.nombreUsuario, class="form-control", id="editNombreUsuario") }}
+                                        </div>
+                                        
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            {{ render_field(form.contrasenia, class="form-control", id="editContrasenia") }}
+                                        </div>
+                                        <div class="col">
+                                            {{ render_field(form.rol, class="form-control", id="editRol") }}
+                                        </div>
+                                        
+                                    </div>
+                                    <div class="row">
+                                        
+                                        <div class="col">
+                                            {{ render_field(form.telefono, class="form-control", id="editTelefono") }}
+                                        </div>
+                                    </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                <button id="btnEditarGalleta" type="submit" class="btn btn-success">Actualizar Usuario</button>
+                            </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="button-container btnEnd">
+                    <button class="btn btn-success" id="agregarUsuario" data-bs-toggle="modal" data-bs-target="#modalUsuario">Agregar Usuario</button>
+        
+                </div>
+            </div>
+        </div>
+    
+{% endblock %}

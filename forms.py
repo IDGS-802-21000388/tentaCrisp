@@ -5,11 +5,21 @@ from wtforms.validators import DataRequired, Length
 from flask_wtf.recaptcha import RecaptchaField
 from wtforms import validators ,DateField, SelectField
 
-class UsuarioForm(FlaskForm):
+class LoginForm(FlaskForm):
     nombreUsuario = StringField('Usuario', validators=[DataRequired(), Length(min=4, max=100)])
     contrasenia = PasswordField('Contraseña', validators=[DataRequired(), Length(min=6, max=100)])
+    
+    
     #recaptcha = RecaptchaField()
 
+class UsuarioForm(FlaskForm):
+    nombre = StringField('Nombre', validators=[DataRequired(), Length(min=4, max=100)])
+    nombreUsuario = StringField('Nombre de Usuario', validators=[DataRequired(), Length(min=4, max=100)])
+    contrasenia = PasswordField('Contraseña', validators=[DataRequired(), Length(min=6, max=100)])
+    rol = SelectField('Rol', choices=[('Administrador', 'Administrador'), ('Gerente', 'Gerente'), ('Produccion', 'Produccion'), ('Venta', 'Venta')])
+    telefono=StringField('Telefono',[
+        validators.length(min=1,max=11,message='valor no válido')
+    ])
 class InventarioForm(Form):
     
     nombre = StringField('Nombre',[validators.DataRequired(message='Favor de ingresar el nombre'),
