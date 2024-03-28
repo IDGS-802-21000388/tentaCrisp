@@ -72,6 +72,8 @@ class Detalle_producto(db.Model):
     idDetalle_producto = db.Column(db.Integer, primary_key=True, autoincrement=True)
     fechaVencimiento = db.Column(db.DateTime)
     cantidadExistentes = db.Column(db.Integer, nullable=False, default=0.0)
+    estatus = db.Column(db.Boolean, nullable=False, default=True)
+
     idProducto = db.Column(db.Integer, db.ForeignKey('producto.idProducto'))
 
 class merma(db.Model):

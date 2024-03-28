@@ -1,0 +1,115 @@
+{% extends "layout.html" %}
+{% from "_macros.html" import render_field_producto %}
+
+{% block content %}
+<div id="bodyTabla">
+    <div id="#containerProductos" style="width: -moz-available;">
+<div id="modalProductos">
+    <div class="modal-header">
+        <h1 class="modal-title fs-5"><i class="fa-solid fa-cookie-bite fa-lg" style="color: #826455;"></i> Agregar Galletas Horneadas</h1>
+    </div>
+    <form action="/producir" class="needs-validation" id="formDataProductos" name="formDataProductos" method="POST">
+        <div class="modal-body" id="productoDetails">
+        </div>
+        <div class="container" style="margin-bottom: -8%;">
+            <div class="row align-items-start">
+                <div id="gelletaHorneada" class="col">
+                    <input type="text" id="txtIdProducto" class="form-control" style="display: none">
+                        
+                    <label for="txtGalleta" class="form-label">¿Qué galleta fue horneada?:</label>
+                    <select id="txtGalleta" class="form-select" aria-label="Default select example">
+                        <!-- Se crea de manera dinámica -->
+                        <option>Seleccione una galleta para hornear</option>
+                        {% for producto in products %}
+                            <option id="{{ producto.idProducto }}"
+                            value="{{ producto.idProducto }}">
+                            {{ producto.nombreProducto }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-floating mb-3" style="margin-top: 15px">
+                        <input name="cantidadMerma" type="number" class="form-control" id="txtMerma">
+                        <label for="floatingInput" style="color:black">Cantidad de merma:</label>
+                    </div>
+                    <div class="form-floating mb-3" style="margin-top: 15px">
+                        <input name="fechaVencimiento" type="date" class="form-control" id="txtMerma">
+                        <label for="floatingInput" style="color:black">fecha de caducidad:</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <input type="hidden" id="productoSeleccionado" name="productoSeleccionado">
+        <div class="modal-footer">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button id="btnGuardarProducto" type="submit" class="btn btn-success">Agregar galletas horneadas</button>
+        </div>
+    </form>
+</div>
+
+        <div class="table-container">
+            <table id="tblProduccion" class="table table-hover table-sm">
+                <thead>
+                    <tr>
+                        <th id="tblCabecera">Nombre del producto</th>
+                        <th id="tblCabecera">
+                            <select name="medida" id="txtMedida">
+                                <option selected id="idOption" value="pieza">Piezas</option>
+                                <option id="idOption" value="caja1K">Caja de 1K</option>
+                                <option id="idOption" value="cajaMedioK">Caja de 700 Gramos</option>
+                            </select>
+                        </th>
+                        <th id="tblCabecera">Costo de producción por pieza</th>
+                        <th id="tblCabecera">Precio de venta por pieza</th>
+                        <th id="tblBtn">Fecha de caducidad</th>
+                        <th id="tblBtn"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producto in productos %}
+                        <tr>
+                            <td>{{ producto['nombreProducto'] }}</td>
+                            <td>{{ producto['cantidadExistentes'] }}</td>
+                            <td>{{ producto['precioProduccion'] }}</td>
+                            <td>{{ producto['precioVenta'] }}</td>            
+                            <td>{{ producto['fechaVencimiento'] }}</td>
+                            <td>
+                                <form method="POST" action="/del_act_logica_produccion" class="eliminarForm">
+                                    <input type="hidden" name="id_producto_{{ producto['idProducto'] }}"
+                                        value="{{ producto['idProducto'] }}">
+                                    <input type="hidden" name="fecha_vencimiento" value="{{ producto['fechaVencimiento'] }}">
+                                    <input type="hidden" id="fecha_vencimiento1" name="fecha_vencimiento1" value="">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                    {% if producto['detalle_estatus'] %}
+                                        <!-- Botón para eliminar lógicamente -->
+                                        <button data-fecha="{{ producto['fechaVencimiento'] }}" type="button" style="background: transparent;" class="btnLogicoDel"
+                                                onclick="confirmarAccion('{{ producto.idProducto }}', '{{ producto.fechaVencimiento }}', 'eliminar')">
+                                            <i class="fa-solid fa-trash" style="color: #c12525;"></i>
+                                        </button>
+                                        <input type="hidden" name="accion" value="eliminar">
+                                    {% else %}
+                                        <!-- Botón para activar el detalle del producto -->
+                                        <button data-fecha="{{ producto['fechaVencimiento'] }}" type="button" style="background: transparent;" class="btnActivar"
+                                                onclick="confirmarAccion('{{ producto.idProducto }}', '{{ producto.fechaVencimiento }}', 'activar')">
+                                            <i class="fa-solid fa-check" style="color: #28a745;"></i>
+                                        </button>
+                                        <input type="hidden" name="accion" value="activar">
+                                    {% endif %}
+                                </form>
+                            </td>           
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+    var selectGalleta = document.getElementById('txtGalleta');
+    var productoSeleccionadoInput = document.getElementById('productoSeleccionado');
+
+    selectGalleta.addEventListener('change', function() {
+        var productoSeleccionado = selectGalleta.value;
+        productoSeleccionadoInput.value = productoSeleccionado;
+    });
+</script>
+<script src="../static/js/produccion.js"></script>
+{% endblock %}
