@@ -9,3 +9,14 @@
         </ul>
     {%endif%} 
 {%endmacro%}
+
+{% macro render_field_producto(field, placeholder='') %}
+    <dd>{{ field(class_='form-control', placeholder=placeholder)|safe }}</dd>
+    {% if field.errors %}
+        <ul>
+            {% for error in field.errors %}
+                <li style="color: red">{{ error }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endmacro %}

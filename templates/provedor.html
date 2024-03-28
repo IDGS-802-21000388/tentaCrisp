@@ -6,7 +6,6 @@
     <table id="tblProveedor" class="table table-hover table-sm">
         <thead>
             <tr>
-                <th>ID</th>
                 <th>Nombre</th>
                 <th>Dirección</th>
                 <th>Teléfono</th>
@@ -17,7 +16,6 @@
         <tbody>
             {% for proveedor in proveedores %}
             <tr>
-                <td>{{ proveedor.idProveedor }}</td>
                 <td>{{ proveedor.nombreProveedor }}</td>
                 <td>{{ proveedor.direccion }}</td>
                 <td>{{ proveedor.telefono }}</td>

@@ -1,115 +1,333 @@
 {% extends "layout.html" %}
-{% from "_macros.html" import render_field %}
+{% from "_macros.html" import render_field_producto %}
 
 {% block content %}
-    <div class="container">
-        <div class="row">
-            <form action="{{ url_for('logout') }}" method="post">
-                <input type="hidden" name="csrf_token" value="{{csrf_token()}}" />
-                <button type="submit" class="btn btn-danger">Cerrar sesión</button>
-            </form>            
-        </div>
-    </div>
-    <!-- Agrega un botón para abrir el modal de productos nuevos -->
-    <div class="row mt-3">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalProductosNuevos">
-            Agregar nueva galleta
-        </button>
-    </div>
-    <div class="row mt-3">
-        <p>Bienvenido, {{ current_user.nombreUsuario }}</p>
-        <p>Tu ultimo inicio de sesión fue {{ current_user.dateLastToken }}</p>
-    </div>
+<p id="titleP">Productos</p>
+<div id="bodyTabla">
+    <div id="#containerProductos" style="width: -moz-available;">
+        <div class="table-container">
+            <table id="tblProductos" class="table table-hover table-sm">
+                <thead>
+                    <tr>
+                        <th id="tblCabecera">Nombre del producto</th>
+                        <th id="tblCabecera">
+                            <select name="medida" id="txtMedida">
+                                <option selected id="idOption" value="pieza">Piezas</option>
+                                <option id="idOption" value="caja1K">Caja de 1K</option>
+                                <option id="idOption" value="cajaMedioK">Caja de 700 Gramos</option>
+                            </select>
+                        </th>
+                        <th id="tblCabecera">Costo de producción por pieza</th>
+                        <th id="tblCabecera">Precio de venta por pieza</th>
+                        <th id="tblBtn"></th>
+                        <th id="tblBtn"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producto in productos %}
 
-    <!-- Modal Productos Nuevos -->
-    <div class="modal fade" id="modalProductosNuevos" tabindex="-1" aria-labelledby="modalProductosNuevosLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <!-- Contenido del modal -->
-            <div class="modal-content" id="modalProductosNuevos">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="modalProductoNuevosLabel"><i class="fa-solid fa-cookie-bite fa-lg" style="color: #826455;"></i> Agregar nueva galleta</h1>
+                    <tr>
+                        <td>{{ producto['nombreProducto'] }}</td>
+                        <td>{{ producto['cantidadExistentes'] }}</td>
+                        <td>{{ producto['precioProduccion'] }}</td>
+                        <td>{{ producto['precioVenta'] }}</td>
+                        <td>
+                            <form method="POST" action="/eliminar_logica_producto" class="eliminarForm">
+                                <input type="hidden" name="id_producto_{{ producto['idProducto'] }}"
+                                    value="{{ producto['idProducto'] }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                <button type="button" style="background: transparent;" class="btnLogicoDel"
+                                    onclick="confirmarEliminacion('{{ producto.idProducto }}')">
+                                    <i class="fa-solid fa-trash" style="color: #c12525;"></i>
+                                </button>
+                            </form>
+                        </td>
+                        <td>
+                            <button type="button" class="btnEditar" id="btnEditar{{ producto.idProducto }}"
+                                data-bs-toggle="modal" data-bs-target="#modalProductosEditar"
+                                data-nombre="{{ producto.nombreProducto }}"
+                                data-cantidad="{{ producto.cantidadExistentes }}"
+                                data-precio-produccion="{{ producto.precioProduccion }}"
+                                data-precio-venta="{{ producto.precioVenta }}"
+                                data-ingredientes="{{ producto.ingredientes }}" data-prod="{{ producto.idProducto }}"
+                                data-foto="{{ producto.fotografia }}">
+                                <i class="fa-solid fa-pen-to-square" style="color: #57351f;"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- modal productos nuevos-->
+        <div class="modal fade" id="modalProductosNuevos" tabindex="-1" aria-labelledby="modalProductosNuevosLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <!-- Contenido del modal -->
+                <div class="modal-content" id="modalProductosNuevos">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="modalProductoNuevosLabel"><i
+                                class="fa-solid fa-cookie-bite fa-lg" style="color: #826455;"></i> Agregar nueva galleta
+                        </h1>
+                    </div>
+                    <form class="needs-validation" id="formDataProductosNuevos" name="formDataProductosNuevos"
+                        method="POST" action="/recetas" enctype="multipart/form-data">
+                        <div class="modal-body" id="productoDetails">
+                            <div class="container">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3 row">
+                                            <label id="lblNuevaGalleta" for="txtNuevaGalleta"
+                                                class="form-label col-sm-4">Nombre de la galleta:</label>
+                                            <div class="col-sm-8">
+                                                {{ render_field_producto(form.nombre_galleta, placeholder='Nombre de la
+                                                galleta') }} </div>
+                                        </div>
+                                        <div class="mb-3 row">
+                                            <label id="lblPrecioProdGalleta" for="txtNuevaGalleta"
+                                                class="form-label col-sm-4">Precio de producción:</label>
+                                            <div class="col-sm-8">
+                                                {{ render_field_producto(form.precio_produccion, placeholder='Precio de
+                                                producción') }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3 row">
+                                            <label id="lblPrecioVentaGalleta" for="txtNuevaGalleta"
+                                                class="form-label col-sm-4">Precio de venta:</label>
+                                            <div class="col-sm-8">
+                                                {{ render_field_producto(form.precio_venta, placeholder='Precio de
+                                                venta') }}
+                                            </div>
+                                        </div>
+                                        <div class="mb-3 row">
+                                            <div class="row">
+                                                <div class="col">
+                                                    <label id="lblFotografiaInput" for="fotografiaInput"
+                                                        class="form-label">Fotografía:</label>
+                                                    <input type="file" id="fotografiaInput" name="fotografia"
+                                                        class="form-control" onchange="mostrarImagen()">
+                                                    <textarea id="base64Output" class="col-lg-8" rows="10" cols="50"
+                                                        style="display: none;"></textarea>
+                                                </div>
+                                                <div class="col">
+                                                    <img id="imagenPreview" src="" width="100px" height="100px">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-10">
+                                        <div class="mb-3 row">
+                                            <label id="lblFechaCaducidad" for="txtNuevaGalleta"
+                                                class="form-label col-sm-4">Fecha de caducidad:</label>
+                                            <div class="col-sm-8" style="margin-left: -10%;">
+                                                {{ render_field_producto(form.fechaCaducidad) }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3 row">
+                                        <div id="gelletaHorneada" class="col">
+                                            <input type="text" id="txtIdProducto" class="form-control"
+                                                style="display: none">
+                                            <label for="txtIngredientesEditar" class="form-label">Ingredientes:</label>
+                                            <label style="margin-left: 55%;" class="form-label">Cantidad de porción en
+                                                gramos:</label>
+                                            <div class="d-flex">
+                                                <select id="txtIngredientes" name="ingrediente" class="form-select"
+                                                    aria-label="Default select example">
+                                                    {% for ingrediente in ingredientes %}
+                                                    <option id="{{ ingrediente.idMateriaPrima }}"
+                                                        value="{{ ingrediente.idMateriaPrima }}">{{
+                                                        ingrediente.nombreMateria }}</option>
+                                                    {% endfor %}
+                                                </select>
+
+                                                <div class="form-floating ms-3">
+                                                    <input type="number" class="form-control" id="txtCantidadPorcion">
+                                                </div>
+                                            </div>
+                                            <div class="form-floating mb-3 d-flex justify-content-end"
+                                                style="margin-top: 15px">
+                                                <button type="button" id="btnIngredientes"
+                                                    class="btn btn-success">Agregar Ingrediente</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3 row">
+                                        <div id="gelletaHorneada" class="col">
+                                            <table id="tblIngredientes" class="table table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th scope="col">Ingrediente</th>
+                                                        <th scope="col">Cantidad</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="tbodyIngredientes">
+                                                    <tr>
+                                                        <!-- se genera dinamico -->
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            <button id="btnGuardarNuevoPermiso" type="submit" class="btn btn-success">Guardar nueva
+                                galleta</button>
+                        </div>
+                    </form>
                 </div>
-                <form class="needs-validation" id="formDataProductosNuevos" name="formDataProductosNuevos" method="POST">
-                    <div class="modal-body" id="productoDetails">
+            </div>
+        </div>
+
+        <!-- modal editar -->
+        <div class="modal fade" id="modalProductosEditar" tabindex="-1" aria-labelledby="modalProductosEditarsLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="modalProductoEditarLabel"><i
+                                class="fa-solid fa-cookie-bite fa-lg" style="color: #826455;"></i> Editar galleta</h1>
+                    </div>
+                    <form class="needs-validation" action="/editar_producto" id="formDataProductosEditar"
+                        name="formDataProductosEditar" method="POST" enctype="multipart/form-data">
+                        <div class="modal-body" id="productoDetails"></div>
                         <div class="container">
                             <div class="row">
+                                <!-- Campos de edición -->
                                 <div class="col-md-6">
+                                    <!-- Nombre de la galleta -->
                                     <div class="mb-3 row">
-                                        <label id="lblNuevaGalleta" for="txtNuevaGalleta" class="form-label col-sm-4">Nombre de la galleta:</label>
+                                        <input type="hidden" name="product" id="product">
+                                        <label for="txtEditarGalleta" class="form-label col-sm-4">Nombre de la
+                                            galleta:</label>
                                         <div class="col-sm-8">
-                                            <input type="text" id="txtNuevaGalleta" class="form-control" placeholder="Nombre de la galleta">
+                                            <input type="text" name="nombre_producto" id="txtEditarGalleta"
+                                                class="form-control" placeholder="Nombre de la galleta"
+                                                value="{{ nombreProducto }}">
                                         </div>
                                     </div>
+                                    <!-- Cantidad Existentes -->
                                     <div class="mb-3 row">
-                                        <label id="lblPrecioProdGalleta" for="txtNuevaGalleta" class="form-label col-sm-4">Precio de producción:</label>
+                                        <label for="txtCantidadExisEditar" class="form-label col-sm-4">Cantidad
+                                            Existentes:</label>
                                         <div class="col-sm-8">
-                                            <input type="text" id="txtPrecioProdGalleta" class="form-control" placeholder="Precio de producción">
+                                            <input type="text" name="cantidad_existentes" id="txtCantidadExisEditar"
+                                                class="form-control" placeholder="Cantidad Existentes">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
+                                    <!-- Precio de producción -->
                                     <div class="mb-3 row">
-                                        <label id="lblPrecioVentaGalleta" for="txtNuevaGalleta" class="form-label col-sm-4">Precio de venta:</label>
+                                        <label for="txtPrecioProdEditar" class="form-label col-sm-4">Precio de
+                                            producción:</label>
                                         <div class="col-sm-8">
-                                            <input type="text" id="txtPrecioVentaGalleta" class="form-control" placeholder="Precio de venta">
+                                            <input type="text" name="precio_produccion" id="txtPrecioProdEditar"
+                                                class="form-control" placeholder="Precio de producción">
                                         </div>
                                     </div>
+                                    <!-- Precio de venta -->
                                     <div class="mb-3 row">
-                                        <div class="row">
-                                            <div class="col">
-                                                <label id="lblFotografiaInput" for="fotografiaInput" class="form-label">Fotografía:</label>
-                                                <input type="file" id="fotografiaInput" class="btn btn-primary" onchange="moduloProducto.convertirPDF();">
-                                                <textarea id="base64Output" class="col-lg-8" rows="10" cols="50" style="display: none;"></textarea>
-                                            </div>
-                                            <div class="col">
-                                                <embed id="fotografia" src="" type="application/pdf" width="100px" height="100px">
-                                            </div>
+                                        <label for="txtPrecioVentaEditar" class="form-label col-sm-4">Precio de
+                                            venta:</label>
+                                        <div class="col-sm-8">
+                                            <input type="text" name="precio_venta" id="txtPrecioVentaEditar"
+                                                class="form-control" placeholder="Precio de venta">
                                         </div>
                                     </div>
                                 </div>
+                                <!-- Fotografía -->
                                 <div class="mb-3 row">
-                                    <div id="gelletaHorneada" class="col">
-                                        <input type="text" id="txtIdProducto" class="form-control" style="display: none">
-                                        <div class="d-flex">
-                                            <select id="txtIngredientes" class="form-select" aria-label="Default select example">
-                                                <!-- Se crea de manera dinámica -->
-                                            </select>
-                                            <div class="form-floating ms-3">
-                                                <input type="number" class="form-control" id="txtCantidadPorcion">
-                                                <label for="floatingInput" style="color:black">Cantidad de porción en KG:</label>
-                                            </div>
-                                        </div>
-                                        <div class="form-floating mb-3 d-flex justify-content-end" style="margin-top: 15px">
-                                            <button id="btnIngredientes" type="button" class="btn btn-success" onclick="moduloProducto.llenarTablaIngredientes()">Agregar Ingrediente</button>
-                                        </div>
+                                    <label for="fotografiaInputEditar" class="form-label col-sm-4">Fotografía:</label>
+                                    <div class="col-sm-8">
+                                        <input type="file" id="fotografiaInputEditar" name="fotografia_editar"
+                                            class="form-control">
+                                        <textarea id="base64OutputEditar" class="form-control" rows="10" cols="50"
+                                            style="display: none;"></textarea>
                                     </div>
                                 </div>
-                                <div class="mb-3 row">
-                                    <div id="gelletaHorneada" class="col">
-                                        <table id="tblIngredientes" class="table table-hover">
+                                <div class="col imgPreviewEditar">
+                                    <img id="imagenPreviewEditar" src="data:image/jpeg;base64," width="100px"
+                                        height="100px">
+                                </div>
+                                <!-- Botón para agregar ingredientes -->
+                                <div class="row">
+                                    <div class="col-4">
+                                        <label for="txtIngredientesEditar" style="margin-left: 27%;"
+                                            class="form-label">Ingredientes:</label>
+                                    </div>
+                                    <div class="col-7">
+                                        <label style="margin-left: 48%;" class="form-label">Cantidad de porción en
+                                            gramos:</label>
+                                    </div>
+                                </div>
+                                <div class="d-flex" style="justify-content: center;margin-bottom: 20px;">
+                                    <select style="width: 50%;" id="txtIngredientes_editar" name="ingrediente"
+                                        class="form-select" aria-label="Default select example">
+                                        {% for ingrediente in ingredientes %}
+                                        <option id="{{ ingrediente.idMateriaPrima }}"
+                                            value="{{ ingrediente.idMateriaPrima }}">{{ ingrediente.nombreMateria }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+
+                                    <div class="form-floating ms-3">
+                                        <input type="number" class="form-control" id="txtCantidadPorcionEditar">
+                                    </div>
+                                </div>
+                                <div class="col" style="display: flex;justify-content: end;">
+                                    <button style="width: 20%;margin-right: 8%;" type="button"
+                                        id="btnIngredientesEditar" class="btn btn-success">Agregar Ingrediente</button>
+                                </div>
+                                <!-- Tabla de ingredientes -->
+                                <div class="mb-3 row" style="display: flex;justify-content: center;">
+                                    <div class="col-10">
+                                        <table id="tblIngredientesEditar" class="table table-hover">
                                             <thead>
                                                 <tr>
                                                     <th scope="col">Ingrediente</th>
                                                     <th scope="col">Cantidad</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id="tbodyIngredientes">
+                                            <tbody id="tbodyIngredientesEditar">
                                                 <tr>
-                                                    <!-- se genera dinamico -->
+                                                    <!-- Ingredientes existentes -->
                                                 </tr>
                                             </tbody>
                                         </table>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                        <button id="btnGuardarNuevoPermiso" type="button" class="btn btn-success" onclick="moduloProducto.guardarGalleta()">Guardar nueva galleta</button>
-                    </div>
-                </form>
+                        <div class="modal-footer">
+                            {% for producto in productos %}
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <input type="hidden" name="id_producto" value="{{ producto.idProducto }}" />
+                            {% endfor %}
+                            <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            <button type="submit" id="btnEditarGalleta" type="button" class="btn btn-success">Guardar
+                                galleta</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
+
+
+        <div class="button-container btnEnd">
+            <button class="btn btn-success" id="agregarGalletaNueva" data-bs-toggle="modal"
+                data-bs-target="#modalProductosNuevos">Agregar nueva galleta</button>
+        </div>
     </div>
+</div>
+<script src="../static/js/receta.js"></script>
 {% endblock %}
