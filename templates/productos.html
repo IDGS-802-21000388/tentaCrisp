@@ -73,6 +73,7 @@
                             <td>{{ producto['fechaVencimiento'] }}</td>
                             <td>
                                 <form method="POST" action="/del_act_logica_produccion" class="eliminarForm">
+                                    <input type="hidden" id="accion" name="accion" value="">
                                     <input type="hidden" name="id_producto_{{ producto['idProducto'] }}"
                                         value="{{ producto['idProducto'] }}">
                                     <input type="hidden" name="fecha_vencimiento" value="{{ producto['fechaVencimiento'] }}">
@@ -84,14 +85,12 @@
                                                 onclick="confirmarAccion('{{ producto.idProducto }}', '{{ producto.fechaVencimiento }}', 'eliminar')">
                                             <i class="fa-solid fa-trash" style="color: #c12525;"></i>
                                         </button>
-                                        <input type="hidden" name="accion" value="eliminar">
                                     {% else %}
                                         <!-- Botón para activar el detalle del producto -->
                                         <button data-fecha="{{ producto['fechaVencimiento'] }}" type="button" style="background: transparent;" class="btnActivar"
                                                 onclick="confirmarAccion('{{ producto.idProducto }}', '{{ producto.fechaVencimiento }}', 'activar')">
                                             <i class="fa-solid fa-check" style="color: #28a745;"></i>
                                         </button>
-                                        <input type="hidden" name="accion" value="activar">
                                     {% endif %}
                                 </form>
                             </td>           

@@ -31,6 +31,7 @@ $(document).ready(function() {
 });
 
 function confirmarAccion(idProducto, fechaVencimiento, accion) {
+    document.getElementById("accion").value = accion;
     let confirmacionTexto = "";
     let confirmacionColor = "";
 

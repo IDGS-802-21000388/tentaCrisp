@@ -393,6 +393,7 @@ def producir():
 @app.route('/del_act_logica_produccion', methods=['POST'])
 def eliminar_logica_produccion():
     id_producto = None
+    print(request.form)
     fecha_vencimiento = request.form.get('fecha_vencimiento1')
     accion = request.form.get('accion')
 
@@ -435,16 +436,13 @@ def productos():
     products_activos.append(producto_dict)
 
     productos_detalle = db.session.query(Producto, Detalle_producto).outerjoin(Detalle_producto, Producto.idProducto == Detalle_producto.idProducto).filter(Producto.estatus == 1).all()
+    productos_detalle_filtrados = [(producto, detalle) for producto, detalle in productos_detalle if detalle is not None]
 
-    for producto, detalle in productos_detalle:
+    for producto, detalle in productos_detalle_filtrados:
         if detalle is not None:
             fecha_vencimiento_producto = detalle.fechaVencimiento.strftime("%Y-%m-%d %H:%M:%S") if detalle.fechaVencimiento else ''
             cantidad_existentes_producto = detalle.cantidadExistentes if detalle.cantidadExistentes else ''
             detalle_estatus = detalle.estatus
-        else:
-            detalle = Detalle_producto(fechaVencimiento='', cantidadExistentes='')
-            fecha_vencimiento_producto = ''
-            cantidad_existentes_producto = ''
 
         ingredientes_asociados = db.session.query(MateriaPrima, Detalle_receta).join(Detalle_receta, MateriaPrima.idMateriaPrima == Detalle_receta.idMateriaPrima).filter(Detalle_receta.idReceta == producto.idProducto).all()
         
