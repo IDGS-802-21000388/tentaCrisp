@@ -178,6 +178,7 @@ def recetas():
                 db.session.add(detalle_receta)
 
         db.session.commit()
+        flash('La receta ha sido agregada correctamente!', 'success')
         return redirect(url_for('recetas'))
 
     return render_template('receta.html', form=nueva_galleta_form, ingredientes=getAllingredientes, productos=productos)
@@ -237,6 +238,7 @@ def editar_producto():
 
         db.session.commit()
         
+        flash('El producto ha sido editado!', 'success')
         return redirect(url_for('recetas'))
     
     for producto, detalle in zip(Producto.query.all(), detalle_productos):
@@ -263,11 +265,14 @@ def eliminar_producto():
         if producto:
             producto.estatus = False 
             db.session.commit()
+            flash('¡El producto ha sido eliminado!', 'success')
 
             return redirect(url_for('recetas'))
         else:
+            flash('No se encontró ningún producto con el ID proporcionado', 'error')
             return 'No se encontró ningún producto con el ID proporcionado'
     else:
+        flash('No se recibió una solicitud POST', 'error')
         return 'No se recibió una solicitud POST'
 
 def getAllIngredientes():

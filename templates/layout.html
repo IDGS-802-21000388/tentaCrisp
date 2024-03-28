@@ -92,14 +92,15 @@
                     </span>
                 </div>
             </div>
-            {% with messages = get_flashed_messages() %}
-            {% if messages %}
-            {% for message in messages %}
-            <div class="alert alert-success" role="alert">
-                {{ message }}
-            </div>
-            {% endfor %}
-            {% endif %}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        {% set alert_class = 'alert alert-success' if category == 'success' else 'alert alert-danger' %}
+                        <div class="{{ alert_class }}" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
             {% endwith %}
             {% block content %}
                
@@ -111,10 +112,17 @@
     <script src="../static/js/bootstrap.bundle.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ url_for('static', filename='js/materiaPrima.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/receta.js') }}"></script>
     <script src="{{ url_for('static', filename='js/usuario.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
-
+    <script>
+        setTimeout(function() {
+            var alertas = document.querySelectorAll('.alert');
+            alertas.forEach(function(alerta) {
+                alerta.remove();
+            });
+        }, 5000);
+    </script>
+    
 </body>
 
 </html>
