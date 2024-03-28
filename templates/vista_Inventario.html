@@ -1,11 +1,11 @@
-{% extends "main.html" %}
+{% extends "layout.html" %}
 
 {% block content %}
 {%import "_macros.html" as macro%}
-<div id="bodyTablaInventario" data-materia-prima="{{ datos_materia_prima | tojson }}">
+<div id="bodyTablaProveedor" data-materia-prima="{{ datos_materia_prima | tojson }}">
     <div id="#containerProductos" style="width: -moz-available;">
         <div class="table-container">
-            <table id="tblMateria" class="table table-hover table-sm">
+            <table id="tblProveedor" class="table table-hover table-sm">
                 <thead>
                     <tr>
                         <th id="tblCabecera">Nombre del producto</th>

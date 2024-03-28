@@ -2,12 +2,12 @@ from flask import Flask, request, render_template, flash, g, redirect, url_for, 
 from flask_wtf.csrf import CSRFProtect
 from config import DevelopmentConfig
 import forms, ssl, base64, json, re
-from models import db, Usuario, MateriaPrima, Producto, Detalle_producto, Receta, Detalle_receta
-from sqlalchemy import func, and_
+from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta
+from sqlalchemy import func , and_
 from functools import wraps
 from flask_cors import CORS
 from flask_wtf.recaptcha import Recaptcha
-from datetime import datetime, timedelta
+from datetime import datetime ,timedelta
 from flask_login import LoginManager, login_user, logout_user, login_required, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import Session
@@ -101,8 +101,91 @@ def inventario():
         })
 
     return render_template("vista_Inventario.html", form=inventario, datos_materia_prima=materia_prima_json, nombre=nombre, precio=precio, cantidad=cantidad, tipo_compra=tipo_compra, fechaVen=fechaVen, fechaCom=fechaCom, forma_compra=forma_compra)
+# Inicio del Modulo de Proveedores
 
-@app.route('/recetas', methods=['GET', 'POST'])
+# Ruta para agregar una nuevo Proveedor
+@app.route("/proveedor", methods=['GET', 'POST'])
+def proveedor():
+    nombreProveedor = ""
+    direccion = ""
+    telefono = ""
+    nombreAtiende = ""
+    provedor = forms.ProveedorForm(request.form)
+
+    if request.method == 'POST':
+        if provedor.validate():
+            nombreProveedor = provedor.nombreProveedor.data
+            direccion = provedor.direccion.data
+            telefono = provedor.telefono.data
+            nombreAtiende = provedor.nombreAtiende.data
+
+            nuevo_proveedor = Proveedor(nombreProveedor=nombreProveedor, direccion=direccion, telefono=telefono, nombreAtiende=nombreAtiende)
+            
+            try:
+                db.session.add(nuevo_proveedor)
+                db.session.commit()
+                mensaje = "Proveedor agregado correctamente."
+                flash(mensaje)
+            except Exception as e:
+                mensaje = "Error al agregar el proveedor a la base de datos: " + str(e)
+                flash(mensaje)
+        else:
+            errores = {campo.name: campo.errors for campo in provedor}
+            return jsonify({'success': False, 'errors': errores})
+
+    proveedores = Proveedor.query.all()
+
+    return render_template("provedor.html", form=provedor, proveedores=proveedores)
+
+# Ruta para eliminar un Proveedor
+@app.route("/eliminar_proveedor", methods=['POST'])
+def eliminar_proveedor():
+    id_proveedor = int(request.form.get("id"))
+    proveedor = Proveedor.query.get(id_proveedor)
+    if proveedor:
+        proveedor.estatus = 0  # Cambiar el estado del usuario a inactivo
+        db.session.commit()
+        mensaje = "Proveedor eliminado correctamente."
+        flash(mensaje)
+    else:
+        mensaje = "Proveedor no encontrado."
+        flash(mensaje)
+    return redirect(url_for('proveedor'))
+
+# Ruta para editar un Proveedor
+@app.route('/editar_proveedor', methods=['POST'])
+def editar_proveedor():
+    provedor = forms.ProveedorForm(request.form)
+    id_proveedor = request.form.get('editIdProveedor')
+    proveedor = Proveedor.query.get(id_proveedor)
+    nombreProveedor = provedor.nombreProveedor.data
+    direccion = provedor.direccion.data
+    telefono = provedor.telefono.data
+    nombreAtiende = provedor.nombreAtiende.data
+
+    if proveedor:
+        proveedor.nombreProveedor = nombreProveedor
+        proveedor.direccion = direccion
+        proveedor.telefono = telefono
+        proveedor.nombreAtiende = nombreAtiende
+
+        try:
+            db.session.commit()
+            mensaje = "Proveedor editado correctamente."
+            flash(mensaje)
+        except Exception as e:
+            mensaje = "Error al editar el proveedor a la base de datos: " + str(e)
+            flash(mensaje)
+    else:
+        flash('Proveedor no encontrado', 'error')
+
+    return redirect(url_for('proveedor'))
+
+
+# Fin del Modulo de Proveedores
+
+
+@app.route('/recetas')
 def recetas():
     getAllingredientes = getAllIngredientes()
     nueva_galleta_form = forms.NuevaGalletaForm()
@@ -193,7 +276,6 @@ def editar_producto():
     detalle_productos = Detalle_producto.query.all()
     fotografia_base64 = None
     id_producto = None
-    print(request.form)
     if request.method == 'POST':
         id_producto = request.form.get('product')
         nombre_producto = request.form.get('nombre_producto')
@@ -260,7 +342,6 @@ def eliminar_producto():
     id_producto = None
     fecha_vencimiento = request.form.get('fecha_vencimiento')
     accion = request.form.get('accion')
-    print(request.form)
     if request.method == 'POST':
         for key, value in request.form.items():
             if key.startswith('id_producto_'):

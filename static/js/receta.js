@@ -91,7 +91,6 @@ function confirmarAccion(idProducto, accion) {
 }
 
 $(document).on('click', '.btnEditar', function() {
-    console.log('ENTRO');
     var nombreProducto = $(this).data('nombre');
     var cantidadExistentes = $(this).data('cantidad');
     var precioProduccion = $(this).data('precio-produccion');

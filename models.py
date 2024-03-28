@@ -36,6 +36,7 @@ class Proveedor(db.Model):
     direccion = db.Column(db.String(255), nullable=False, default="")
     telefono = db.Column(db.String(15), nullable=False, default="")
     nombreAtiende = db.Column(db.String(100), nullable=False, default="")
+    estatus = db.Column(db.Integer, nullable=False, default=1)
 
     # Relación con la tabla MateriaPrima
     materia_prima = db.relationship('MateriaPrima', backref='proveedor', lazy=True)
