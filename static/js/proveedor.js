@@ -41,20 +41,24 @@ $(document).ready(function(){
     });
 });
 
-$(document).ready(function(){
-    $(".editar").click(function(){
-        var idProveedor = $(this).data("id");
-        // Realiza una solicitud al servidor para obtener los datos del proveedor con el ID correspondiente
-        $.get("/obtener_datos_proveedor?id=" + idProveedor, function(data, status){
-            // Llena los campos del formulario en el modal con los datos obtenidos
-            $("#txtIdProvedor").val(data.idProveedor);
-            $("#nombreProveedor").val(data.nombreProveedor);
-            $("#direccion").val(data.direccion);
-            $("#telefono").val(data.telefono);
-            $("#nombreAtiende").val(data.nombreAtiende);
-
-            // Abre el modal
-            $('#modalProveedorEditar').modal('show');
-        });
+$(document).ready(function() {
+    $('.btnEditarProveedor').click(function() {
+        console.log("HOLAAA 2 " + $(this).data('id') + " " + $(this).data('nombreproveedor') + " " + $(this).data('direccion') + " " + $(this).data('telefono') + " " + $(this).data('nombreatiende') + " ");
+        var idProveedor = $(this).data('id');
+        console.log("HOLAAA "+ idProveedor);
+        var nombreProveedor = $(this).data('nombreproveedor');
+        var direccion = $(this).data('direccion');
+        var telefono = $(this).data('telefono');
+        var nombreAtiende = $(this).data('nombreatiende');
+        
+        // Llenar el formulario de edición con los detalles del proveedor
+        $('#editIdProveedor').val(idProveedor);
+        $('#editNombreProveedor').val(nombreProveedor);
+        $('#editDireccion').val(direccion);
+        $('#editTelefono').val(telefono);
+        $('#editNombreAtiende').val(nombreAtiende);
+        
+        $('#modalProveedorEditar').modal('show'); // Mostrar el modal
     });
 });
+

@@ -11,22 +11,27 @@
                 <th>Dirección</th>
                 <th>Teléfono</th>
                 <th>Nombre del Atiende</th>
-                <th>Acciones</th> <!-- Nueva columna para botones de editar y eliminar -->
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
             {% for proveedor in proveedores %}
             <tr>
-                <td>{{ proveedor['idProveedor'] }}</td>
-                <td>{{ proveedor['nombreProveedor'] }}</td>
-                <td>{{ proveedor['direccion'] }}</td>
-                <td>{{ proveedor['telefono'] }}</td>
-                <td>{{ proveedor['nombreAtiende'] }}</td>
+                <td>{{ proveedor.idProveedor }}</td>
+                <td>{{ proveedor.nombreProveedor }}</td>
+                <td>{{ proveedor.direccion }}</td>
+                <td>{{ proveedor.telefono }}</td>
+                <td>{{ proveedor.nombreAtiende }}</td>
                 <td>
-                    <button type="button" class="btn btn-primary editar" data-id="{{ proveedor['idProveedor'] }}">Editar</button>
+                    <button class="btnEditarProveedor" data-id="{{ proveedor['idProveedor'] }}"
+                        data-nombreProveedor="{{proveedor.nombreProveedor}}" data-direccion="{{proveedor.direccion}}"
+                        data-telefono="{{proveedor.telefono}}" data-nombreAtiende="{{proveedor.nombreAtiende}}">
+                        <i class="fa-solid fa-pen-to-square" style="color: #57351f;"></i>
+                    </button>
                     <form action="/eliminar_proveedor" method="POST" style="display: inline;">
                         <input type="hidden" name="id" value="{{ proveedor['idProveedor'] }}">
-                        <button type="submit" class="btn btn-danger">Eliminar</button>
+                        <button type="submit" ><i class="fa-solid fa-trash" style="color: #c12525;"></i></button>
+                        
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     </form>
                 </td>
@@ -34,100 +39,104 @@
             {% endfor %}
         </tbody>
     </table>
-    
 
-        <!-- modal Proveedor-->
-        <div class="modal fade" id="modalProveedor" tabindex="-1" aria-labelledby="modalProveedorLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content" id="modalProveedor">
-                    <div class="modal-header">
-                        <h1 class="modal-title fs-5" id="modalProveedorLabel"><i class="fa-solid fa-cookie-bite fa-lg" style="color: #826455;"></i> Agregar Proveedor</h1>
-                    </div>
-                    <form class="needs-validation" id="formDataProveedorNuevos" name="formDataProveedorNuevos" method="POST">
-                        <div class="modal-body" id="proveedorDetails"></div>
-                        <div class="container">
-                            <div class="row align-items-center">
-                                <input type="text" id="txtIdProvedor" style="display: none;" class="form-control">
 
-                                <div id="proveedor" class="d-flex col-lg-8">
-                                    {{macro.render_field(form.nombreProveedor,class="form-control")}}
-                                </div>
+    <!-- modal Proveedor-->
+    <div class="modal fade" id="modalProveedor" tabindex="-1" aria-labelledby="modalProveedorLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" id="modalProveedor">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="modalProveedorLabel"><i class="fa-solid fa-cookie-bite fa-lg"
+                            style="color: #826455;"></i> Agregar Proveedor</h1>
+                </div>
+                <form class="needs-validation" id="formDataProveedorNuevos" name="formDataProveedorNuevos"
+                    method="POST">
+                    <div class="modal-body" id="proveedorDetails"></div>
+                    <div class="container">
+                        <div class="row align-items-center">
+                            <input type="text" id="txtIdProvedor" style="display: none;" class="form-control">
 
-                                <div id="proveedor" class="d-flex col-lg-8">
-                                    {{macro.render_field(form.direccion,class="form-control")}}
-                                </div>
-
-                                <div id="proveedor" class="d-flex col-lg-8">
-                                    {{macro.render_field(form.telefono,class="form-control")}}
-                                </div>
-
-                                <div id="proveedor" class="d-flex col-lg-8 ">
-                                    {{macro.render_field(form.nombreAtiende,class="form-control")}}
-                                </div>
-
-                                
+                            <div id="proveedor" class="col-8">
+                                {{macro.render_field(form.nombreProveedor,class="form-control")}}
                             </div>
+
+                            <div id="proveedor" class="col-8">
+                                {{macro.render_field(form.direccion,class="form-control")}}
+                            </div>
+
+                            <div id="proveedor" class="col-8">
+                                {{macro.render_field(form.telefono,class="form-control")}}
+                            </div>
+
+                            <div id="proveedor" class="col-8">
+                                {{macro.render_field(form.nombreAtiende,class="form-control")}}
+                            </div>
+
+
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                            <button id="btnSaveProveedor" type="submit" class="btn btn-success">Guardar Proveedor</button>
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        <button id="btnSaveProveedor" type="submit" class="btn btn-success">Guardar Proveedor</button>
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                    </form>
-                </div>
-            </div>
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        </div>
-
-        <!-- modal editar Proveedor -->
-        <div class="modal fade" id="modalProveedorEditar" tabindex="-1" aria-labelledby="modalProveedorEditarsLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content" id="modalProveedorEditar">
-                    <div class="modal-header">
-                        <h1 class="modal-title fs-5"><i class="fa-solid fa-cookie-bite fa-lg" style="color: #826455;"></i> Editar Proveedor</h1>
                     </div>
-                    <form class="needs-validation" id="formDataProductosEditar" name="formDataProductosEditar" method="POST">
-                        <div class="modal-body" id="proveedorDetails"></div>
-                        <div class="container">
-                            <div class="row align-items-center">
-                                <input type="text" id="txtIdProvedor" style="display: none;" class="form-control">
-
-                                <div id="proveedor" class="d-flex col-lg-8">
-                                    {{macro.render_field(form.nombreProveedor,class="form-control")}}
-                                </div>
-
-                                <div id="proveedor" class="d-flex col-lg-8">
-                                    {{macro.render_field(form.direccion,class="form-control")}}
-                                </div>
-
-                                <div id="proveedor" class="d-flex col-lg-8">
-                                    {{macro.render_field(form.telefono,class="form-control")}}
-                                </div>
-
-                                <div id="proveedor" class="d-flex col-lg-8 ">
-                                    {{macro.render_field(form.nombreAtiende,class="form-control")}}
-                                </div>
-
-                                
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                            <button id="btnEditarGalleta" type="button" class="btn btn-success">Actualizar Proveedor</button>
-                            
-                        </div>
-                    </form>
-                </div>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                </form>
             </div>
         </div>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    </div>
+
+    <!-- modal editar Proveedor -->
+    <div class="modal fade" id="modalProveedorEditar" tabindex="-1" aria-labelledby="modalProveedorEditarsLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" id="modalProveedorEditar">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5"><i class="fa-solid fa-cookie-bite fa-lg" style="color: #826455;"></i>
+                        Editar Proveedor</h1>
+                </div>
+                    <div class="modal-body" id="proveedorDetails"></div>
+                    <div class="container">
+                        <form action="{{ url_for('editar_proveedor') }}" method="POST" novalidate>
+                            <div class="row align-items-center">
+                                <input  type="hidden" id="editIdProveedor" name="editIdProveedor">
+
+                                <div id="proveedor" class="col-8">
+                                    {{macro.render_field(form.nombreProveedor,class="form-control",id="editNombreProveedor")}}
+                                </div>
+
+                                <div id="proveedor" class="col-8">
+                                    {{macro.render_field(form.direccion,class="form-control", id="editDireccion")}}
+                                </div>
+
+                                <div id="proveedor" class="col-8">
+                                    {{macro.render_field(form.telefono,class="form-control", id="editTelefono")}}
+                                </div>
+
+                                <div id="proveedor" class="col-8">
+                                    {{macro.render_field(form.nombreAtiende,class="form-control", id="editNombreAtiende")}}
+                                </div>
 
 
-        <div class="button-container btnEnd">
-            <button class="btn btn-success" id="agregarProveedor" data-bs-toggle="modal" data-bs-target="#modalProveedor">Agregar Proveedor</button>
-
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                <button id="btnEditarProveedor" type="submit" class="btn btn-success">Actualizar Proveedor</button>
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            </div>
+                        </form>
+                    </div>
+            </div>
         </div>
     </div>
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+
+    <div class="button-container btnEnd">
+        <button class="btn btn-success" id="agregarProveedor" data-bs-toggle="modal"
+            data-bs-target="#modalProveedor">Agregar Proveedor</button>
+
+    </div>
+</div>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 </div>
 {% endblock %}

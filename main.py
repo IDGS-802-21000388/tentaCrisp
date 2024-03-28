@@ -1,7 +1,7 @@
 from flask import Flask, request, render_template, flash, g, redirect, url_for, session, jsonify
 from flask_wtf.csrf import CSRFProtect
 from config import DevelopmentConfig
-import forms, ssl
+import forms, ssl, re
 from models import db, Usuario, MateriaPrima, Proveedor
 from sqlalchemy import func
 from functools import wraps
@@ -12,8 +12,9 @@ import base64
 import json
 from flask_login import LoginManager, login_user, logout_user, login_required, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from sqlalchemy.orm import Session
 ssl._create_default_https_context = ssl._create_unverified_context
+
 
 app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
@@ -39,15 +40,17 @@ def unauthorized():
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
-    usuario_form = forms.UsuarioForm(request.form)
+    usuario_form = forms.LoginForm(request.form)
     
     if request.method == 'POST' and usuario_form.validate():
         print(request.form)
         nombreUsuario = usuario_form.nombreUsuario.data
         contrasenia = usuario_form.contrasenia.data
         user = Usuario.query.filter_by(nombreUsuario=nombreUsuario).first()
+        print("Contraseña",generate_password_hash(contrasenia))
         
         if user and check_password_hash(user.contrasenia, contrasenia):
+            
             login_user(user)
             #flash('Inicio de sesión exitoso', 'success')
             user.dateLastToken = datetime.utcnow()
@@ -104,6 +107,9 @@ def inventario():
 
     return render_template("vista_Inventario.html", form=inventario, datos_materia_prima=materia_prima_json, nombre=nombre, precio=precio, cantidad=cantidad, tipo_compra=tipo_compra, fechaVen=fechaVen, fechaCom=fechaCom, forma_compra=forma_compra)
 
+# Inicio del Modulo de Proveedores
+
+# Ruta para agregar una nuevo Proveedor
 @app.route("/proveedor", methods=['GET', 'POST'])
 def proveedor():
     nombreProveedor = ""
@@ -133,17 +139,11 @@ def proveedor():
             errores = {campo.name: campo.errors for campo in provedor}
             return jsonify({'success': False, 'errors': errores})
 
-    datos_proveedor = Proveedor.query.all()
-    proveedores = [{
-        'idProveedor': proveedor.idProveedor,
-        'nombreProveedor': proveedor.nombreProveedor,
-        'direccion': proveedor.direccion,
-        'telefono': proveedor.telefono,
-        'nombreAtiende': proveedor.nombreAtiende
-    } for proveedor in datos_proveedor]
+    proveedores = Proveedor.query.all()
 
     return render_template("provedor.html", form=provedor, proveedores=proveedores)
 
+# Ruta para eliminar un Proveedor
 @app.route("/eliminar_proveedor", methods=['POST'])
 def eliminar_proveedor():
     id_proveedor = int(request.form.get("id"))
@@ -159,31 +159,139 @@ def eliminar_proveedor():
         flash(mensaje)
     return redirect(url_for('proveedor'))
 
-@app.route("/obtener_datos_proveedor", methods=['GET'])
-def obtener_datos_proveedor():
-    id_proveedor = int(request.args.get("id"))
+# Ruta para editar un Proveedor
+@app.route('/editar_proveedor', methods=['POST'])
+def editar_proveedor():
+    provedor = forms.ProveedorForm(request.form)
+    id_proveedor = request.form.get('editIdProveedor')
+    print("HOLA ", int(id_proveedor))
     proveedor = Proveedor.query.get(id_proveedor)
+    nombreProveedor = provedor.nombreProveedor.data
+    direccion = provedor.direccion.data
+    telefono = provedor.telefono.data
+    nombreAtiende = provedor.nombreAtiende.data
+
     if proveedor:
-        # Imprime los datos del proveedor para verificar que se estén pasando correctamente
-        print("Datos del proveedor:", proveedor.idProveedor, proveedor.nombreProveedor, proveedor.direccion, proveedor.telefono, proveedor.nombreAtiende)
-        # Devuelve los datos del proveedor como respuesta a la solicitud AJAX
-        return jsonify({
-            'idProveedor': proveedor.idProveedor,
-            'nombreProveedor': proveedor.nombreProveedor,
-            'direccion': proveedor.direccion,
-            'telefono': proveedor.telefono,
-            'nombreAtiende': proveedor.nombreAtiende
-        })
+        proveedor.nombreProveedor = nombreProveedor
+        proveedor.direccion = direccion
+        proveedor.telefono = telefono
+        proveedor.nombreAtiende = nombreAtiende
+
+        try:
+            db.session.commit()
+            mensaje = "Proveedor editado correctamente."
+            flash(mensaje)
+        except Exception as e:
+            mensaje = "Error al editar el proveedor a la base de datos: " + str(e)
+            flash(mensaje)
     else:
-        # Maneja el caso donde el proveedor no se encuentra
-        return jsonify({'error': 'Proveedor no encontrado'}), 404
+        flash('Proveedor no encontrado', 'error')
+
+    return redirect(url_for('proveedor'))
 
 
+# Fin del Modulo de Proveedores
 
 
 @app.route('/recetas')
 def recetas():
     return render_template('receta.html')
+
+password_pattern = re.compile(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$')
+
+@app.route('/usuarios', methods=['GET', 'POST'])
+def usuarios():
+    usuario_form = forms.UsuarioForm(request.form)
+    if request.method == 'POST' and usuario_form.validate():
+        nombre = usuario_form.nombre.data
+        nombreUsuario = usuario_form.nombreUsuario.data
+        contrasenia = usuario_form.contrasenia.data
+        rol = usuario_form.rol.data
+        telefono = usuario_form.telefono.data
+        
+         # Verificar si la contraseña no está en la lista de contraseñas por defecto o previamente utilizadas
+        if contrasenia in lista_contraseñas_no_seguras:
+            flash('La contraseña no puede ser una contraseña por defecto o previamente utilizada.', 'error')
+            return redirect(url_for('usuarios'))
+        
+        # Verificar si la contraseña cumple con la política de seguridad
+        if not password_pattern.match(contrasenia):
+            flash('La contraseña debe contener al menos una mayúscula, una minúscula, un número y un carácter especial.', 'error')
+            return redirect(url_for('usuarios'))
+
+        # Verificar si la contraseña no está en la lista de contraseñas por defecto o previamente utilizadas
+        if contrasenia in lista_contraseñas_no_seguras:
+            flash('La contraseña no puede ser una contraseña por defecto o previamente utilizada.', 'error')
+            return redirect(url_for('usuarios'))
+
+        # Hash de la contraseña antes de guardarla
+        contrasenia_hash = generate_password_hash(contrasenia)
+        
+        nuevo_usuario = Usuario(nombre=nombre, nombreUsuario=nombreUsuario, contrasenia=contrasenia_hash, rol=rol, telefono=telefono)
+        db.session.add(nuevo_usuario)
+        db.session.commit()
+        
+        flash('Usuario guardado correctamente', 'success')  
+        return redirect(url_for('usuarios'))
+    
+    usuarios = Usuario.query.all()
+        
+    return render_template('usuarios.html', form=usuario_form, usuarios=usuarios)
+
+
+@app.route('/editar_usuario', methods=['POST'])
+def editar_usuario():
+    usuario_form = forms.UsuarioForm(request.form)
+    id_usuario = request.form.get('editIdUsuario')
+    usuario = Usuario.query.get(id_usuario)
+
+    if usuario:
+        usuario.nombre = usuario_form.nombre.data
+        usuario.nombreUsuario = usuario_form.nombreUsuario.data
+        contrasenia = usuario_form.contrasenia.data
+        rol = usuario_form.rol.data
+        telefono = usuario_form.telefono.data
+
+        # Verificar si la contraseña ha sido modificada y cumple con las políticas de seguridad
+        if contrasenia and not check_password_hash(usuario.contrasenia, contrasenia):
+            if not password_pattern.match(contrasenia):
+                flash('La contraseña debe contener al menos una mayúscula, una minúscula, un número y un carácter especial.', 'error')
+                return redirect(url_for('usuarios'))
+
+            if contrasenia in lista_contraseñas_no_seguras:
+                flash('La contraseña no puede ser una contraseña por defecto o previamente utilizada.', 'error')
+                return redirect(url_for('usuarios'))
+            
+            usuario.contrasenia = generate_password_hash(contrasenia)
+            
+        usuario.rol = rol
+        usuario.telefono = telefono
+
+        db.session.commit()
+        flash('Usuario actualizado correctamente', 'success')
+    else:
+        flash('Usuario no encontrado', 'error')
+
+    return redirect(url_for('usuarios'))
+    
+lista_contraseñas_no_seguras = [
+    'password',
+    '123456',
+    'contraseña',
+    
+]
+    
+@app.route('/cambiar_estado_usuario/<int:id_usuario>', methods=['POST','GET'])
+def cambiar_estado_usuario(id_usuario):
+    usuario = Usuario.query.get(id_usuario)
+    if usuario:
+        usuario.estatus = 0  # Cambiar el estado del usuario a inactivo
+        db.session.commit()
+        flash('Usuario eliminado correctamente', 'success')
+    else:
+        flash('Usuario no encontrado', 'error')
+
+    return redirect(url_for('usuarios'))
 
 
 if __name__ == '__main__':
