@@ -2,13 +2,13 @@ from flask import Flask, request, render_template, flash, g, redirect, url_for, 
 from flask_wtf.csrf import CSRFProtect
 from config import DevelopmentConfig
 import forms, ssl, base64, json, re
-from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta
+from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, LogsUser
 from sqlalchemy import func , and_
 from functools import wraps
 from flask_cors import CORS
 from flask_wtf.recaptcha import Recaptcha
-from datetime import datetime ,timedelta
-from flask_login import LoginManager, login_user, logout_user, login_required, login_manager
+from datetime import datetime ,timedelta, timezone
+from flask_login import current_user, LoginManager, login_user, logout_user, login_required, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import Session
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -41,20 +41,48 @@ def login():
     usuario_form = forms.LoginForm(request.form)
     
     if request.method == 'POST' and usuario_form.validate():
-        nombreUsuario = usuario_form.nombreUsuario.data
-        contrasenia = usuario_form.contrasenia.data
-        user = Usuario.query.filter_by(nombreUsuario=nombreUsuario).first()
-        if user and check_password_hash(user.contrasenia, contrasenia):
-            
-            login_user(user)
-            #flash('Inicio de sesión exitoso', 'success')
-            user.dateLastToken = datetime.utcnow() - timedelta(hours=6)
-            db.session.commit()
-            return jsonify({'success': True, 'redirect': url_for('index')})
+        fecha_hora_actual = datetime.now()
+        bloqueado_hasta = session.get('bloqueado_hasta')
+        bloqueado_hasta = datetime.fromisoformat(bloqueado_hasta) if bloqueado_hasta else None
+        fecha_hora_actual = fecha_hora_actual.replace(microsecond=0)
+
+        if bloqueado_hasta:
+            bloqueado_hasta = bloqueado_hasta.replace(microsecond=0)
+
+        if bloqueado_hasta and (fecha_hora_actual) < bloqueado_hasta:
+            return redirect(url_for('login'))
         else:
-            #flash('Usuario o contraseña inválidos', 'error')
-            return jsonify({'success': False, 'error': 'Usuario o contraseña inválidos'})
-    
+            nombreUsuario = usuario_form.nombreUsuario.data
+            contrasenia = usuario_form.contrasenia.data
+            user = Usuario.query.filter_by(nombreUsuario=nombreUsuario).first()
+            if user and check_password_hash(user.contrasenia, contrasenia): 
+                login_user(user)
+                log = LogsUser(
+                    procedimiento='Inicio de sesión',
+                    lastDate=fecha_hora_actual,
+                    idUsuario=user.idUsuario
+                )
+                db.session.add(log)
+                db.session.commit()
+
+                user.dateLastToken = fecha_hora_actual
+                db.session.commit()
+                session.pop('intentos_fallidos', None)
+                return jsonify({'success': True, 'redirect': url_for('index')})
+            else:
+                session['intentos_fallidos'] = session.get('intentos_fallidos', 0) + 1
+                if session['intentos_fallidos'] >= 3:
+                    session['bloqueado_hasta'] = (fecha_hora_actual + timedelta(minutes=1)).isoformat()
+                    flash('Tu cuenta ha sido bloqueada temporalmente debido a múltiples intentos fallidos. Inténtalo de nuevo más tarde.', 'error')
+                log = LogsUser(
+                    procedimiento=f'Se intento Iniciar Sesión con las credenciales usuario:{nombreUsuario} y contraseña:{contrasenia} ',
+                    lastDate=fecha_hora_actual,
+                    idUsuario=0
+                )
+                db.session.add(log)
+                db.session.commit()
+                return jsonify({'success': False, 'error': 'Usuario o contraseña inválidos'})
+        
     return render_template('login.html', form=usuario_form)
 
 @app.route('/logout', methods=['GET', 'POST'])
@@ -66,7 +94,9 @@ def logout():
 @app.route('/index')
 @login_required
 def index():
-    return render_template('index.html')
+    id_usuario_actual = current_user.idUsuario
+    ultimo_inicio_sesion = LogsUser.query.filter_by(procedimiento='Inicio de sesión', idUsuario=id_usuario_actual).order_by(LogsUser.lastDate.desc()).offset(1).limit(1).first()
+    return render_template('index.html', ultimo_inicio_sesion=ultimo_inicio_sesion)
 
 @app.route("/inventario")
 def inventario():
@@ -393,7 +423,6 @@ def producir():
 @app.route('/del_act_logica_produccion', methods=['POST'])
 def eliminar_logica_produccion():
     id_producto = None
-    print(request.form)
     fecha_vencimiento = request.form.get('fecha_vencimiento1')
     accion = request.form.get('accion')
 

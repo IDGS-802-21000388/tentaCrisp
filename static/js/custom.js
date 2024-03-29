@@ -2,7 +2,6 @@ $(document).ready(function() {
     $('form').submit(function(event) {
         event.preventDefault();
         var formData = $(this).serialize();
-
         $.ajax({
             type: 'POST',
             url: '/',
@@ -22,7 +21,7 @@ $(document).ready(function() {
                 }
             },
             error: function(xhr, status, error) {
-                mostrarAlerta("error", "Usuario o contraseña incorrecto.");
+                mostrarAlerta("error", "Tu cuenta ha sido bloqueda por 1 minuto.");
             }
         });
     });

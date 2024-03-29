@@ -2,6 +2,7 @@
 {% from "_macros.html" import render_field %}
 
 {% block content %}
+    <input type="hidden" id="lastDate" value="{{ultimo_inicio_sesion.lastDate}}">
     <center>
         <video id="videoPlayer" width="900" height="500" controls autoplay loop>
             <source src="../static/img/banner.mp4" type="video/mp4">
@@ -12,7 +13,7 @@
 <script>
     $(document).ready(function() {
         var nombreUsuario = "{{ current_user.nombreUsuario }}";
-        var fechaUltimaConexion = "{{ current_user.dateLastToken }}";
+        var fechaUltimaConexion = document.getElementById("lastDate").value;
         Swal.fire({
             title: 'Bienvenido',
             text: 'Hola, ' + nombreUsuario + '! \n Tu último inicio de sesión fue el ' + fechaUltimaConexion,

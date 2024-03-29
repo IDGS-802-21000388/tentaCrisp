@@ -13,7 +13,6 @@ class Usuario(db.Model, UserMixin):
     rol = db.Column(db.String(30), nullable=False)
     estatus = db.Column(db.Integer, nullable=False, default=1)
     telefono = db.Column(db.String(15), nullable=False, default="")
-    lastToken = db.Column(db.String(100), nullable=True)
     dateLastToken = db.Column(db.DateTime, nullable=True, default=datetime.utcnow)
     def is_active(self):
         return self.estatus != 0
@@ -22,9 +21,9 @@ class Usuario(db.Model, UserMixin):
 
 class LogsUser(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    fecha = db.Column(db.TIMESTAMP, default=datetime.utcnow)
     procedimiento = db.Column(db.String(255), nullable=False)
-    idUsuario = db.Column(db.Integer, db.ForeignKey('usuario.idUsuario'))
+    lastDate = db.Column(db.DateTime, nullable=True, default=datetime.utcnow)
+    idUsuario = db.Column(db.Integer)
 
 class Medida(db.Model):
     idMedida = db.Column(db.Integer, primary_key=True, autoincrement=True)
