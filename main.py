@@ -524,8 +524,6 @@ def productos():
         }
 
         productos.append(producto_dict)
-    with open('productos.json', 'w') as json_file:
-        json.dump(productos, json_file, indent=4)
 
     return render_template('productos.html', productos=productos, products=products_activos)
 
