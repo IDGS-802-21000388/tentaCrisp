@@ -1,7 +1,7 @@
 from flask import Flask, request, render_template, flash, g, redirect, url_for, session, jsonify
 from flask_wtf.csrf import CSRFProtect
 from config import DevelopmentConfig
-import forms, ssl, base64, json, re
+import forms, ssl, base64, json, re, html2text
 from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, LogsUser, Detalle_materia_prima
 from sqlalchemy import func , and_
 from functools import wraps
@@ -52,8 +52,8 @@ def login():
         if bloqueado_hasta and (fecha_hora_actual) < bloqueado_hasta:
             return redirect(url_for('login'))
         else:
-            nombreUsuario = usuario_form.nombreUsuario.data
-            contrasenia = usuario_form.contrasenia.data
+            nombreUsuario = str(html2text.html2text(usuario_form.nombreUsuario.data)).strip()
+            contrasenia = str(html2text.html2text(usuario_form.contrasenia.data)).strip()
             user = Usuario.query.filter_by(nombreUsuario=nombreUsuario).first()
             if user and check_password_hash(user.contrasenia, contrasenia): 
                 login_user(user)
@@ -214,8 +214,8 @@ def editar_proveedor():
 
 # Fin del Modulo de Proveedores
 
-
 @app.route('/recetas', methods=['GET', 'POST'])
+@login_required
 def recetas():
     getAllingredientes = getAllIngredientes()
     nueva_galleta_form = forms.NuevaGalletaForm()
@@ -299,6 +299,7 @@ def recetas():
     return render_template('receta.html', form=nueva_galleta_form, ingredientes=getAllingredientes, productos=productos)
 
 @app.route('/editar_producto', methods=['GET', 'POST'])
+@login_required
 def editar_producto():
     getAllingredientes = getAllIngredientes()
     nueva_galleta_form = forms.NuevaGalletaForm()
@@ -368,6 +369,7 @@ def editar_producto():
     return render_template('receta.html', form=nueva_galleta_form, ingredientes=getAllingredientes, productos=productos)
 
 @app.route('/eliminar_logica_producto', methods=['POST'])
+@login_required
 def eliminar_producto():
     id_producto = None
     fecha_vencimiento = request.form.get('fecha_vencimiento')
@@ -400,6 +402,7 @@ def eliminar_producto():
         return 'No se recibió una solicitud POST'
 
 @app.route('/producir', methods=['POST'])
+@login_required
 def producir():
     if request.method == 'POST':
         cantidadProduccion = 40
@@ -439,6 +442,7 @@ def producir():
         return 'No se recibió una solicitud POST'
 
 @app.route('/del_act_logica_produccion', methods=['POST'])
+@login_required
 def eliminar_logica_produccion():
     id_producto = None
     fecha_vencimiento = request.form.get('fecha_vencimiento1')
@@ -467,6 +471,7 @@ def eliminar_logica_produccion():
     return redirect(url_for('productos'))
 
 @app.route('/productos', methods=['GET', 'POST'])
+@login_required
 def productos():
     productos = []
     products_activos = []
