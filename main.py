@@ -2,7 +2,7 @@ from flask import Flask, request, render_template, flash, g, redirect, url_for, 
 from flask_wtf.csrf import CSRFProtect
 from config import DevelopmentConfig
 import forms, ssl, base64, json, re
-from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, LogsUser
+from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, LogsUser, Detalle_materia_prima
 from sqlalchemy import func , and_
 from functools import wraps
 from flask_cors import CORS
@@ -215,7 +215,7 @@ def editar_proveedor():
 # Fin del Modulo de Proveedores
 
 
-@app.route('/recetas')
+@app.route('/recetas', methods=['GET', 'POST'])
 def recetas():
     getAllingredientes = getAllIngredientes()
     nueva_galleta_form = forms.NuevaGalletaForm()
@@ -404,9 +404,13 @@ def producir():
     if request.method == 'POST':
         cantidadProduccion = 40
         cantidadMerma = int(request.form.get('cantidadMerma')) if request.form.get('cantidadMerma') else 0
-        idProducto = int(request.form.get('productoSeleccionado'))
-        fechaVencimiento = request.form.get('fechaVencimiento')
-
+        idProducto = int(request.form.get('productoSeleccionado')) if request.form.get('productoSeleccionado') else 0
+        fechaVencimiento = request.form.get('fechaVencimiento') if request.form.get('fechaVencimiento') else 0
+        print('fechaVencimiento')
+        print(fechaVencimiento)
+        if idProducto == 0 or fechaVencimiento == 0:
+            flash('Por favor, completa todos los campos correctamente', 'error')
+            return redirect(url_for('productos'))
         detalle_producto = Detalle_producto(
             fechaVencimiento=fechaVencimiento,
             cantidadExistentes=cantidadProduccion - cantidadMerma,
@@ -415,7 +419,21 @@ def producir():
         db.session.add(detalle_producto)
         db.session.commit()
 
-        return redirect(url_for('productos'))
+        receta = Receta.query.filter_by(idProducto=idProducto).first()
+        if receta:
+            detalles_receta = Detalle_receta.query.filter_by(idReceta=receta.idReceta).all()
+            for detalle in detalles_receta:
+                materia_prima = MateriaPrima.query.get(detalle.idMateriaPrima)
+                cantidad_necesaria = detalle.porcion
+                detalle_materia_prima = Detalle_materia_prima.query.filter_by(idMateriaPrima=materia_prima.idMateriaPrima, estatus=1).filter(Detalle_materia_prima.cantidadExistentes > 0).first()
+                if detalle_materia_prima:
+                    detalle_materia_prima.cantidadExistentes -= cantidad_necesaria
+                    db.session.commit()
+                else:
+                    flash(f'No se encontró ingriendientes en existencia para {materia_prima.nombreMateria}', 'error')
+                    return redirect(url_for('productos'))
+            flash('La galletas se han horneado!', 'success')
+            return redirect(url_for('productos'))
     else:
         flash('No se recibió una solicitud POST', 'error')
         return 'No se recibió una solicitud POST'
@@ -452,7 +470,8 @@ def eliminar_logica_produccion():
 def productos():
     productos = []
     products_activos = []
-    
+    producto_dict = {}
+
     productos_activos = Producto.query.filter_by(estatus=1).all()
     for producto in productos_activos:
         producto_dict = {
@@ -462,7 +481,8 @@ def productos():
             'precioVenta': producto.precioVenta,
             'fotografia': producto.fotografia,
         }
-    products_activos.append(producto_dict)
+    if len(producto_dict) > 0:
+        products_activos.append(producto_dict)
 
     productos_detalle = db.session.query(Producto, Detalle_producto).outerjoin(Detalle_producto, Producto.idProducto == Detalle_producto.idProducto).filter(Producto.estatus == 1).all()
     productos_detalle_filtrados = [(producto, detalle) for producto, detalle in productos_detalle if detalle is not None]

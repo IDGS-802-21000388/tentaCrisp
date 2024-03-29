@@ -54,6 +54,7 @@ class Detalle_materia_prima(db.Model):
     fechaCompra = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     fechaVencimiento = db.Column(db.DateTime)
     cantidadExistentes = db.Column(db.Float, nullable=False, default=0.0)
+    estatus = db.Column(db.Integer, nullable=False, default=1)
     idMateriaPrima = db.Column(db.Integer, db.ForeignKey('materia_prima.idMateriaPrima'))
 
 class Producto(db.Model):
