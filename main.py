@@ -63,6 +63,8 @@ def login():
         else:
             nombreUsuario = str(html2text.html2text(usuario_form.nombreUsuario.data)).strip()
             contrasenia = str(html2text.html2text(usuario_form.contrasenia.data)).strip()
+            print("Nombre Usuario",nombreUsuario ,"Contraseña",contrasenia)
+            print("Contraseña",generate_password_hash(contrasenia))
             user = Usuario.query.filter_by(nombreUsuario=nombreUsuario).first()
             if user and check_password_hash(user.contrasenia, contrasenia): 
                 login_user(user)
@@ -281,8 +283,90 @@ def inventario():
 
                         gramos_ajustados = float(cantidad) * float(campoKilosBulto) - (float(cantidad) * float(campoKilosBulto) * float(porcentaje_cascara) / 100)
                         porcentaje = float((gramos_ajustados / (float(valor_unidad) * 50)) * 100)
+                        if nombreMateria in ingredientes_liquidos:
+                            idMedida = 3
+                        elif nombreMateria == "Huevo":
+                            idMedida = 1
+                        else:
+                            idMedida = 2
+
+                        nueva_materia_prima = MateriaPrima(
+                            nombreMateria=nombreMateria,
+                            precioCompra=precio,
+                            cantidad=cantidad,
+                            idMedida=idMedida,
+                            idProveedor=proveedor_id
+                        )
+                        db.session.add(nueva_materia_prima)
+
+                        try:
+                            db.session.commit()
+                            mensaje = "Materia Prima agregada correctamente."
+                            flash(mensaje)
+                        except Exception as e:
+                            mensaje = "Error al agregar la materia prima a la base de datos: " + str(e)
+                            flash(mensaje)
+                        
+                        ultimo_id_materia_prima = MateriaPrima.query.order_by(MateriaPrima.idMateriaPrima.desc()).first().idMateriaPrima
+                        nuevo_detalle_materia_prima = Detalle_materia_prima(
+                            fechaCompra=fechaCom,
+                            fechaVencimiento=fechaVen,
+                            cantidadExistentes=gramos_ajustados,
+                            idMateriaPrima=ultimo_id_materia_prima,
+                            porcentaje=porcentaje)
+
+                        db.session.add(nuevo_detalle_materia_prima)
+
+                        try:
+                            db.session.commit()
+                            flash("Detalle de materia prima agregado correctamente.")
+                        except Exception as e:
+                            db.session.rollback()
+                            flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
                     else:
                         gramos_ajustados = float(cantidad) * float(campoKilosBulto)
+
+                        if nombreMateria in ingredientes_liquidos:
+                            idMedida = 3
+                        elif nombreMateria == "Huevo":
+                            idMedida = 1
+                        else:
+                            idMedida = 2
+
+                        nueva_materia_prima = MateriaPrima(
+                            nombreMateria=nombreMateria,
+                            precioCompra=precio,
+                            cantidad=cantidad,
+                            idMedida=idMedida,
+                            idProveedor=proveedor_id
+                        )
+                        db.session.add(nueva_materia_prima)
+
+                        try:
+                            db.session.commit()
+                            mensaje = "Materia Prima agregada correctamente."
+                            flash(mensaje)
+                        except Exception as e:
+                            mensaje = "Error al agregar la materia prima a la base de datos: " + str(e)
+                            flash(mensaje)
+                        
+                        ultimo_id_materia_prima = MateriaPrima.query.order_by(MateriaPrima.idMateriaPrima.desc()).first().idMateriaPrima
+                        nuevo_detalle_materia_prima = Detalle_materia_prima(
+                            fechaCompra=fechaCom,
+                            fechaVencimiento=fechaVen,
+                            cantidadExistentes=gramos_ajustados,
+                            idMateriaPrima=ultimo_id_materia_prima,
+                            porcentaje=porcentaje)
+
+                        db.session.add(nuevo_detalle_materia_prima)
+
+                        try:
+                            db.session.commit()
+                            flash("Detalle de materia prima agregado correctamente.")
+                        except Exception as e:
+                            db.session.rollback()
+                            flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
+
                 else:
                     flash("Este ingrediente no puede ser encontrado.")
             else:
@@ -297,8 +381,90 @@ def inventario():
                         datos_de_porcentaje = (datos_sin_porcentaje * float(porcentaje_cascara) / 100)
                         gramos_ajustados = datos_sin_porcentaje - datos_de_porcentaje
                         porcentaje = float((gramos_ajustados / (float(valor_unidad) * 50)) * 100)
+
+                        if nombreMateria in ingredientes_liquidos:
+                            idMedida = 3
+                        elif nombreMateria == "Huevo":
+                            idMedida = 1
+                        else:
+                            idMedida = 2
+
+                        nueva_materia_prima = MateriaPrima(
+                            nombreMateria=nombreMateria,
+                            precioCompra=precio,
+                            cantidad=cantidad,
+                            idMedida=idMedida,
+                            idProveedor=proveedor_id
+                        )
+                        db.session.add(nueva_materia_prima)
+
+                        try:
+                            db.session.commit()
+                            mensaje = "Materia Prima agregada correctamente."
+                            flash(mensaje)
+                        except Exception as e:
+                            mensaje = "Error al agregar la materia prima a la base de datos: " + str(e)
+                            flash(mensaje)
+                        
+                        ultimo_id_materia_prima = MateriaPrima.query.order_by(MateriaPrima.idMateriaPrima.desc()).first().idMateriaPrima
+                        nuevo_detalle_materia_prima = Detalle_materia_prima(
+                            fechaCompra=fechaCom,
+                            fechaVencimiento=fechaVen,
+                            cantidadExistentes=gramos_ajustados,
+                            idMateriaPrima=ultimo_id_materia_prima,
+                            porcentaje=porcentaje)
+
+                        db.session.add(nuevo_detalle_materia_prima)
+
+                        try:
+                            db.session.commit()
+                            flash("Detalle de materia prima agregado correctamente.")
+                        except Exception as e:
+                            db.session.rollback()
+                            flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
+
                     else:
                         gramos_ajustados = float(cantidad) * float(valor_unidad)
+                        if nombreMateria in ingredientes_liquidos:
+                            idMedida = 3
+                        elif nombreMateria == "Huevo":
+                            idMedida = 1
+                        else:
+                            idMedida = 2
+
+                        nueva_materia_prima = MateriaPrima(
+                            nombreMateria=nombreMateria,
+                            precioCompra=precio,
+                            cantidad=cantidad,
+                            idMedida=idMedida,
+                            idProveedor=proveedor_id
+                        )
+                        db.session.add(nueva_materia_prima)
+
+                        try:
+                            db.session.commit()
+                            mensaje = "Materia Prima agregada correctamente."
+                            flash(mensaje)
+                        except Exception as e:
+                            mensaje = "Error al agregar la materia prima a la base de datos: " + str(e)
+                            flash(mensaje)
+                        
+                        ultimo_id_materia_prima = MateriaPrima.query.order_by(MateriaPrima.idMateriaPrima.desc()).first().idMateriaPrima
+                        nuevo_detalle_materia_prima = Detalle_materia_prima(
+                            fechaCompra=fechaCom,
+                            fechaVencimiento=fechaVen,
+                            cantidadExistentes=gramos_ajustados,
+                            idMateriaPrima=ultimo_id_materia_prima,
+                            porcentaje=porcentaje)
+
+                        db.session.add(nuevo_detalle_materia_prima)
+
+                        try:
+                            db.session.commit()
+                            flash("Detalle de materia prima agregado correctamente.")
+                        except Exception as e:
+                            db.session.rollback()
+                            flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
                 else:
                     flash("Este ingrediente no puede ser encontrado.")
             else:
@@ -312,52 +478,50 @@ def inventario():
                     gramos_ajustados -= (float(cantidad) * float(valor_unidad) * float(porcentaje_cascara) / 100)
                     if float(valor_unidad) != 0:
                         porcentaje = float((gramos_ajustados / (float(valor_unidad) * 50)) * 100)
+                        if nombreMateria in ingredientes_liquidos:
+                            idMedida = 3
+                        elif nombreMateria == "Huevo":
+                            idMedida = 1
+                        else:
+                            idMedida = 2
+
+                        nueva_materia_prima = MateriaPrima(
+                            nombreMateria=nombreMateria,
+                            precioCompra=precio,
+                            cantidad=cantidad,
+                            idMedida=idMedida,
+                            idProveedor=proveedor_id
+                        )
+                        db.session.add(nueva_materia_prima)
+
+                        try:
+                            db.session.commit()
+                            mensaje = "Materia Prima agregada correctamente."
+                            flash(mensaje)
+                        except Exception as e:
+                            mensaje = "Error al agregar la materia prima a la base de datos: " + str(e)
+                            flash(mensaje)
+                        
+                        ultimo_id_materia_prima = MateriaPrima.query.order_by(MateriaPrima.idMateriaPrima.desc()).first().idMateriaPrima
+                        nuevo_detalle_materia_prima = Detalle_materia_prima(
+                            fechaCompra=fechaCom,
+                            fechaVencimiento=fechaVen,
+                            cantidadExistentes=gramos_ajustados,
+                            idMateriaPrima=ultimo_id_materia_prima,
+                            porcentaje=porcentaje)
+
+                        db.session.add(nuevo_detalle_materia_prima)
+
+                        try:
+                            db.session.commit()
+                            flash("Detalle de materia prima agregado correctamente.")
+                        except Exception as e:
+                            db.session.rollback()
+                            flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
             else:
                 flash("Este ingrediente no puede ser comprado por unidad.")
         else:
             flash("Tipo de compra no válido.")
-        
-        if nombreMateria in ingredientes_liquidos:
-            idMedida = 3
-        elif nombreMateria == "Huevo":
-            idMedida = 1
-        else:
-            idMedida = 2
-
-        nueva_materia_prima = MateriaPrima(
-            nombreMateria=nombreMateria,
-            precioCompra=precio,
-            cantidad=cantidad,
-            idMedida=idMedida,
-            idProveedor=proveedor_id
-        )
-        db.session.add(nueva_materia_prima)
-
-        try:
-            db.session.commit()
-            mensaje = "Materia Prima agregada correctamente."
-            flash(mensaje)
-        except Exception as e:
-            mensaje = "Error al agregar la materia prima a la base de datos: " + str(e)
-            flash(mensaje)
-        
-        ultimo_id_materia_prima = MateriaPrima.query.order_by(MateriaPrima.idMateriaPrima.desc()).first().idMateriaPrima
-        nuevo_detalle_materia_prima = Detalle_materia_prima(
-            fechaCompra=fechaCom,
-            fechaVencimiento=fechaVen,
-            cantidadExistentes=gramos_ajustados,
-            idMateriaPrima=ultimo_id_materia_prima,
-            porcentaje=porcentaje)
-
-        db.session.add(nuevo_detalle_materia_prima)
-
-        try:
-            db.session.commit()
-            flash("Detalle de materia prima agregado correctamente.")
-        except Exception as e:
-            db.session.rollback()
-            flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
-    
     
 
     materias_primas = MateriaPrima.query.all()
