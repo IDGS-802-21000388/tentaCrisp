@@ -2,16 +2,18 @@ from flask import Flask, request, render_template, flash, g, redirect, url_for, 
 from flask_wtf.csrf import CSRFProtect
 from config import DevelopmentConfig
 import forms, ssl, base64, json, re
-from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta
+from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, Detalle_materia_prima, Medida, mermaInventario ,LogsUser
+import forms, ssl, base64, json, re, html2text
 from sqlalchemy import func , and_
 from functools import wraps
 from flask_cors import CORS
 from flask_wtf.recaptcha import Recaptcha
-from datetime import datetime ,timedelta
-from flask_login import LoginManager, login_user, logout_user, login_required, login_manager
+from datetime import datetime ,timedelta, timezone
+from flask_login import current_user, LoginManager, login_user, logout_user, login_required, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import Session
 ssl._create_default_https_context = ssl._create_unverified_context
+from collections import defaultdict
 
 
 app = Flask(__name__)
@@ -41,22 +43,48 @@ def login():
     usuario_form = forms.LoginForm(request.form)
     
     if request.method == 'POST' and usuario_form.validate():
-        nombreUsuario = usuario_form.nombreUsuario.data
-        contrasenia = usuario_form.contrasenia.data
-        user = Usuario.query.filter_by(nombreUsuario=nombreUsuario).first()
-        print("Contraseña",generate_password_hash(contrasenia))
-        
-        if user and check_password_hash(user.contrasenia, contrasenia):
-            
-            login_user(user)
-            #flash('Inicio de sesión exitoso', 'success')
-            user.dateLastToken = datetime.utcnow() - timedelta(hours=6)
-            db.session.commit()
-            return jsonify({'success': True, 'redirect': url_for('index')})
+        fecha_hora_actual = datetime.now()
+        bloqueado_hasta = session.get('bloqueado_hasta')
+        bloqueado_hasta = datetime.fromisoformat(bloqueado_hasta) if bloqueado_hasta else None
+        fecha_hora_actual = fecha_hora_actual.replace(microsecond=0)
+
+        if bloqueado_hasta:
+            bloqueado_hasta = bloqueado_hasta.replace(microsecond=0)
+
+        if bloqueado_hasta and (fecha_hora_actual) < bloqueado_hasta:
+            return redirect(url_for('login'))
         else:
-            #flash('Usuario o contraseña inválidos', 'error')
-            return jsonify({'success': False, 'error': 'Usuario o contraseña inválidos'})
-    
+            nombreUsuario = str(html2text.html2text(usuario_form.nombreUsuario.data)).strip()
+            contrasenia = str(html2text.html2text(usuario_form.contrasenia.data)).strip()
+            user = Usuario.query.filter_by(nombreUsuario=nombreUsuario).first()
+            if user and check_password_hash(user.contrasenia, contrasenia): 
+                login_user(user)
+                log = LogsUser(
+                    procedimiento='Inicio de sesión',
+                    lastDate=fecha_hora_actual,
+                    idUsuario=user.idUsuario
+                )
+                db.session.add(log)
+                db.session.commit()
+
+                user.dateLastToken = fecha_hora_actual
+                db.session.commit()
+                session.pop('intentos_fallidos', None)
+                return jsonify({'success': True, 'redirect': url_for('index')})
+            else:
+                session['intentos_fallidos'] = session.get('intentos_fallidos', 0) + 1
+                if session['intentos_fallidos'] >= 3:
+                    session['bloqueado_hasta'] = (fecha_hora_actual + timedelta(minutes=1)).isoformat()
+                    flash('Tu cuenta ha sido bloqueada temporalmente debido a múltiples intentos fallidos. Inténtalo de nuevo más tarde.', 'error')
+                log = LogsUser(
+                    procedimiento=f'Se intento Iniciar Sesión con las credenciales usuario:{nombreUsuario} y contraseña:{contrasenia} ',
+                    lastDate=fecha_hora_actual,
+                    idUsuario=0
+                )
+                db.session.add(log)
+                db.session.commit()
+                return jsonify({'success': False, 'error': 'Usuario o contraseña inválidos'})
+        
     return render_template('login.html', form=usuario_form)
 
 @app.route('/logout', methods=['GET', 'POST'])
@@ -68,41 +96,10 @@ def logout():
 @app.route('/index')
 @login_required
 def index():
-    return render_template('index.html')
+    id_usuario_actual = current_user.idUsuario
+    ultimo_inicio_sesion = LogsUser.query.filter_by(procedimiento='Inicio de sesión', idUsuario=id_usuario_actual).order_by(LogsUser.lastDate.desc()).offset(1).limit(1).first()
+    return render_template('index.html', ultimo_inicio_sesion=ultimo_inicio_sesion)
 
-@app.route("/inventario")
-def inventario():
-    nombre = ""
-    precio = ""
-    cantidad = ""
-    tipo_compra = ""
-    fechaVen = ""
-    fechaCom = ""
-    forma_compra = ""
-    inventario = forms.InventarioForm(request.form)
-    if request.method == 'POST' and inventario.validate():
-        nombre = inventario.nombre.data
-        precio = inventario.precio.data
-        cantidad = inventario.cantidad.data
-        tipo_compra = request.form.get('tipo_compra')
-        fechaVen = inventario.fechaVen.data
-        fechaCom = inventario.fechaCom.data
-        forma_compra = request.form.get('forma_compra')
-
-    datos_materia_prima = MateriaPrima.query.all()
-    materia_prima_json = []
-    for materia in datos_materia_prima:
-        materia_prima_json.append({
-            'nombre': materia.nombreMateria,
-            'cantidad': materia.cantidadExistentes,
-            'tipo': materia.medida.tipoMedida,
-            'precio_compra': materia.precioCompra,
-            'fecha_compra': materia.fechaCompra.strftime('%Y-%m-%d'),
-            'fecha_vencimiento': materia.fechaVencimiento.strftime('%Y-%m-%d') if materia.fechaVencimiento else None,
-            'porcentaje': materia.porcentaje
-        })
-
-    return render_template("vista_Inventario.html", form=inventario, datos_materia_prima=materia_prima_json, nombre=nombre, precio=precio, cantidad=cantidad, tipo_compra=tipo_compra, fechaVen=fechaVen, fechaCom=fechaCom, forma_compra=forma_compra)
 # Inicio del Modulo de Proveedores
 
 # Ruta para agregar una nuevo Proveedor
@@ -143,7 +140,6 @@ def proveedor():
 @app.route("/eliminar_proveedor", methods=['POST'])
 def eliminar_proveedor():
     id_proveedor = int(request.form.get("id"))
-    print("HOLA ", id_proveedor)
     proveedor = Proveedor.query.get(id_proveedor)
     if proveedor:
         proveedor.estatus = 0  # Cambiar el estado del usuario a inactivo
@@ -160,7 +156,6 @@ def eliminar_proveedor():
 def editar_proveedor():
     provedor = forms.ProveedorForm(request.form)
     id_proveedor = request.form.get('editIdProveedor')
-    print("HOLA ", int(id_proveedor))
     proveedor = Proveedor.query.get(id_proveedor)
     nombreProveedor = provedor.nombreProveedor.data
     direccion = provedor.direccion.data
@@ -185,50 +180,505 @@ def editar_proveedor():
 
     return redirect(url_for('proveedor'))
 
-
 # Fin del Modulo de Proveedores
 
+# Inicio del Modulo de Materia Prima
+@app.route("/inventario", methods=['GET', 'POST'])
+def inventario():
+    nombreMateria = ""
+    precio = ""
+    cantidad = ""
+    tipo_compra = ""
+    fechaVen = ""
+    idMedida = ""
+    gramos_ajustados = ""
+    porcentaje = 0
+    inventario = forms.InventarioForm(request.form)
+    proveedores = Proveedor.query.all()
+    if request.method == 'POST':
+        nombreMateria = inventario.nombre.data
+        precio = inventario.precio.data
+        cantidad = inventario.cantidad.data
+        tipo_compra = request.form.get('tipo_compra')
+        fechaVen = inventario.fechaVen.data
+        fechaCom = datetime.now()
+        proveedor_id = request.form.get('proveedor')
+        campoKilosBulto = request.form.get('kilos_bulto')
+        campoKilosCaja = request.form.get('numero_piezas_caja')
+        
+        #Tupla de Productos con cascara por porcentaje
+        ingredientes_con_cascara_porcentaje = [
+            ("Naranja", 20),
+            ("Cereza en almíbar", 5),
+            ("Nuez picada", 20),
+            ("Huevo", 11)
+        ]
+        #Tupla de Productos Liquidos por militros
+        ingredientes_liquidos = [
+            ("Leche", 1000),
+            ("Vainilla líquida", 560)
+        ]
+        #Tupla de Valores por Unidad
+        ingredientes_con_valores = [
+            ("Azúcar", 1000),  # 1 kilogramo de azúcar
+            ("Mantequilla", 1000),  # 1 kilogramo de mantequilla
+            ("Bicarbonato de sodio", 300),  # 300 gramos de bicarbonato de sodio
+            ("Harina de trigo", 1000),  # 1 kilogramo de harina de trigo
+            ("Huevo", 1900),  # 1.9 kilogramos de huevos
+            ("Cerezas en almíbar", 3500),  # 3.5 kilogramos de cerezas en almíbar
+            ("Nueces", 1000),  # 1 kilogramo de nueces
+            ("Sal", 1000),  # 1 kilogramo de sal
+            ("Leche en polvo", 2700),  # 2.7 kilogramos de leche en polvo
+            ("Manteca vegetal", 1000),  # 1 kilogramo de manteca vegetal
+            ("Polvo para hornear", 1000),  # 1 kilogramo de polvo para hornear
+            ("Harina integral", 1000),  # 1 kilogramo de harina integral
+            ("Copos de avena", 1000),  # 1 kilogramo de copos de avena
+            ("Azúcar moreno", 1000),  # 1 kilogramo de azúcar moreno
+            ("Esencia de vainilla", 500),  # 500 mililitros de esencia de vainilla
+            ("Chispas de chocolate", 500),  # 500 gramos de chispas de chocolate
+            ("Hojuelas de avena", 1000),  # 1 kilogramo de hojuelas de avena
+            ("Cerezas", 580),  # 580 gramos de cerezas
+            ("Leche", 1000),  # 1 litro de leche
+            ("Mermelada de fresa", 980),  # 980 gramos de mermelada de fresa
+            ("Harina", 1000)
+        ]
+        #Tupla de Ingredientes de bultos
+        ingredientes_de_bultos = [
+            "Azucar",
+            "Harina",
+            "Azucar Glass",
+            "Sal",
+            "Harina de Trigo",
+            "Naranja",
+            "Polvo para Hornear",
+            "Canela",
+            "Harina Integral",
+            "Azucar Morena",
+            "Hojuelas de Avena",
+        ]
+        #Tupla de Ingredientes de cajas
+        ingredientes_de_caja = [
+            ("Mantequilla",24),
+            ("Huevo",22),
+            ("Manteca Vegetal",24),
+            ("Manteca de Cerdo",24),
+            ("Copoz de Avena",40)
+        ]
 
-@app.route('/recetas')
+        if tipo_compra == 'bulto':
+            if nombreMateria in ingredientes_de_bultos:
+                if nombreMateria in [nombre for nombre, valor_unidad in ingredientes_con_valores]:
+                    valor_unidad = [valor_unidad for nombre, valor_unidad in ingredientes_con_valores if nombre == nombreMateria][0]
+                    if nombreMateria in [nombre for nombre, porcentaje in ingredientes_con_cascara_porcentaje]:
+                        porcentaje_cascara = [porcentaje for nombre, porcentaje in ingredientes_con_cascara_porcentaje if nombre == nombreMateria][0]
+
+                        gramos_ajustados = float(cantidad) * float(campoKilosBulto) - (float(cantidad) * float(campoKilosBulto) * float(porcentaje_cascara) / 100)
+                        porcentaje = float((gramos_ajustados / (float(valor_unidad) * 50)) * 100)
+                    else:
+                        gramos_ajustados = float(cantidad) * float(campoKilosBulto)
+                else:
+                    flash("Este ingrediente no puede ser encontrado.")
+            else:
+                flash("Este ingrediente no puede ser comprado en bulto.")
+        elif tipo_compra == 'caja':
+            if nombreMateria in [nombre for nombre, _ in ingredientes_de_caja]:
+                if nombreMateria in [nombre for nombre, valor_unidad in ingredientes_con_valores]:
+                    valor_unidad = [valor_unidad for nombre, valor_unidad in ingredientes_con_valores if nombre == nombreMateria][0]
+                    if nombreMateria in [nombre for nombre, porcentaje in ingredientes_con_cascara_porcentaje]:
+                        porcentaje_cascara = [porcentaje for nombre, porcentaje in ingredientes_con_cascara_porcentaje if nombre == nombreMateria][0]
+                        datos_sin_porcentaje = float(campoKilosCaja) * float(valor_unidad)
+                        datos_de_porcentaje = (datos_sin_porcentaje * float(porcentaje_cascara) / 100)
+                        gramos_ajustados = datos_sin_porcentaje - datos_de_porcentaje
+                        porcentaje = float((gramos_ajustados / (float(valor_unidad) * 50)) * 100)
+                    else:
+                        gramos_ajustados = float(cantidad) * float(valor_unidad)
+                else:
+                    flash("Este ingrediente no puede ser encontrado.")
+            else:
+                flash("Este ingrediente no puede ser comprado por caja.")
+        elif tipo_compra == 'unidad':
+            if nombreMateria in [nombre for nombre, _ in ingredientes_con_valores]:
+                valor_unidad = [valor_unidad for nombre, valor_unidad in ingredientes_con_valores if nombre == nombreMateria][0]
+                gramos_ajustados = float(cantidad) * float(valor_unidad)
+                if nombreMateria in [nombre for nombre, porcentaje in ingredientes_con_cascara_porcentaje]:
+                    porcentaje_cascara = [porcentaje for nombre, porcentaje in ingredientes_con_cascara_porcentaje if nombre == nombreMateria][0]
+                    gramos_ajustados -= (float(cantidad) * float(valor_unidad) * float(porcentaje_cascara) / 100)
+                    if float(valor_unidad) != 0:
+                        porcentaje = float((gramos_ajustados / (float(valor_unidad) * 50)) * 100)
+            else:
+                flash("Este ingrediente no puede ser comprado por unidad.")
+        else:
+            flash("Tipo de compra no válido.")
+        
+        if nombreMateria in ingredientes_liquidos:
+            idMedida = 3
+        elif nombreMateria == "Huevo":
+            idMedida = 1
+        else:
+            idMedida = 2
+
+        nueva_materia_prima = MateriaPrima(
+            nombreMateria=nombreMateria,
+            precioCompra=precio,
+            cantidad=cantidad,
+            idMedida=idMedida,
+            idProveedor=proveedor_id
+        )
+        db.session.add(nueva_materia_prima)
+
+        try:
+            db.session.commit()
+            mensaje = "Materia Prima agregada correctamente."
+            flash(mensaje)
+        except Exception as e:
+            mensaje = "Error al agregar la materia prima a la base de datos: " + str(e)
+            flash(mensaje)
+        
+        ultimo_id_materia_prima = MateriaPrima.query.order_by(MateriaPrima.idMateriaPrima.desc()).first().idMateriaPrima
+        nuevo_detalle_materia_prima = Detalle_materia_prima(
+            fechaCompra=fechaCom,
+            fechaVencimiento=fechaVen,
+            cantidadExistentes=gramos_ajustados,
+            idMateriaPrima=ultimo_id_materia_prima,
+            porcentaje=porcentaje)
+
+        db.session.add(nuevo_detalle_materia_prima)
+
+        try:
+            db.session.commit()
+            flash("Detalle de materia prima agregado correctamente.")
+        except Exception as e:
+            db.session.rollback()
+            flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
+    
+    
+
+    materias_primas = MateriaPrima.query.all()
+    detalle_primas = Detalle_materia_prima.query.all()
+    print("Detalle Prima", detalle_primas)
+    proveedores = Proveedor.query.all()
+    medida = Medida.query.all()
+
+    datos_procesados = procesar_datos(materias_primas, detalle_primas)
+    
+    materias_agotadas = set()
+    for materia_prima in materias_primas:
+        for detalle in detalle_primas:
+            nombre_materia = materia_prima.nombreMateria
+            cantidad_existentes = detalle.cantidadExistentes
+            
+            if cantidad_existentes <= 600:
+                materias_agotadas.add(nombre_materia)
+
+    mensaje_alerta = "\n".join([f"{materia} - Cantidad: {cantidad_existentes}" for materia in materias_agotadas])
+    if mensaje_alerta:
+        flash("Ingredientes agotados o por agotarse próximamente:\n" + mensaje_alerta)
+
+
+    return render_template("vista_Inventario.html", datos_procesados=datos_procesados, form=inventario, materias_primas=materias_primas, proveedores=proveedores, detalle_primas=detalle_primas, medida=medida)
+
+def procesar_datos(materias_primas, detalles_primas):
+    detalles_por_materia = defaultdict(list)
+    for detalle in detalles_primas:
+        detalles_por_materia[detalle.idMateriaPrima].append(detalle)
+    datos_procesados_dict = defaultdict(lambda: {'cantidad_existente': 0, 'fecha_vencimiento': None, 'porcentaje': None})
+
+    for materia_prima in materias_primas:
+        detalles = detalles_por_materia[materia_prima.idMateriaPrima]
+
+        if detalles:
+            cantidad_existente = sum(detalle.cantidadExistentes for detalle in detalles)
+            fecha_vencimiento = max(detalle.fechaVencimiento for detalle in detalles if detalle.fechaVencimiento is not None)
+            porcentaje_suma = sum(detalle.porcentaje for detalle in detalles if detalle.porcentaje is not None)
+        else:
+            cantidad_existente = 0
+            fecha_vencimiento = None
+            porcentaje_suma = 0 
+
+        datos_procesados_dict[materia_prima.nombreMateria]['cantidad_existente'] += cantidad_existente
+        if fecha_vencimiento:
+            if not datos_procesados_dict[materia_prima.nombreMateria]['fecha_vencimiento'] or fecha_vencimiento > datos_procesados_dict[materia_prima.nombreMateria]['fecha_vencimiento']:
+                datos_procesados_dict[materia_prima.nombreMateria]['fecha_vencimiento'] = fecha_vencimiento
+        datos_procesados_dict[materia_prima.nombreMateria]['porcentaje'] = porcentaje_suma
+    datos_procesados = [{'nombre': nombre, **datos} for nombre, datos in datos_procesados_dict.items()]
+
+    return datos_procesados
+
+@app.route('/editar_inventario', methods=['POST'])
+def editar_inventario():
+    nombreMateria = ""
+    precio = ""
+    cantidad = ""
+    tipo_compra = ""
+    fechaVen = ""
+    idMedida = ""
+    gramos_ajustados = ""
+    porcentaje = 0
+    inventario = forms.InventarioForm(request.form)
+    id_materiaPrima = request.form.get('editIdMateria')
+    if request.method == 'POST':
+        nombreMateria = inventario.nombre.data
+        precio = inventario.precio.data
+        cantidad = inventario.cantidad.data
+        tipo_compra = request.form.get('tipo_compraEdit')
+        fechaVen = inventario.fechaVen.data
+        fechaCom = datetime.now()
+        proveedor_id = request.form.get('proveedor')
+        campoKilosBulto = request.form.get('kilos_bulto_edit')
+        campoKilosCaja = request.form.get('numero_piezas_caja_edit')
+        
+        #Tupla de Productos con cascara por porcentaje
+        ingredientes_con_cascara_porcentaje = [
+            ("Naranja", 20),
+            ("Cereza en almíbar", 5),
+            ("Nuez picada", 20),
+            ("Huevo", 11)
+        ]
+        #Tupla de Productos Liquidos por militros
+        ingredientes_liquidos = [
+            ("Leche", 1000),
+            ("Vainilla", 560)
+        ]
+        #Tupla de Valores por Unidad
+        ingredientes_con_valores = [
+            ("Azúcar", 1000),  # 1 kilogramo de azúcar
+            ("Mantequilla", 1000),  # 1 kilogramo de mantequilla
+            ("Bicarbonato de sodio", 300),  # 300 gramos de bicarbonato de sodio
+            ("Harina de trigo", 1000),  # 1 kilogramo de harina de trigo
+            ("Huevo", 1900),  # 1.9 kilogramos de huevos
+            ("Cerezas en almíbar", 3500),  # 3.5 kilogramos de cerezas en almíbar
+            ("Nueces", 1000),  # 1 kilogramo de nueces
+            ("Sal", 1000),  # 1 kilogramo de sal
+            ("Leche en polvo", 2700),  # 2.7 kilogramos de leche en polvo
+            ("Manteca vegetal", 1000),  # 1 kilogramo de manteca vegetal
+            ("Polvo para hornear", 1000),  # 1 kilogramo de polvo para hornear
+            ("Harina integral", 1000),  # 1 kilogramo de harina integral
+            ("Copos de avena", 1000),  # 1 kilogramo de copos de avena
+            ("Azúcar moreno", 1000),  # 1 kilogramo de azúcar moreno
+            ("Vainilla", 500),  # 500 mililitros de esencia de vainilla
+            ("Chispas de chocolate", 500),  # 500 gramos de chispas de chocolate
+            ("Hojuelas de avena", 1000),  # 1 kilogramo de hojuelas de avena
+            ("Cerezas", 580),  # 580 gramos de cerezas
+            ("Leche", 1000),  # 1 litro de leche
+            ("Mermelada de fresa", 980),  # 980 gramos de mermelada de fresa
+            ("Harina", 1000)
+        ]
+        #Tupla de Ingredientes de bultos
+        ingredientes_de_bultos = [
+            "Azucar",
+            "Harina",
+            "Azucar Glass",
+            "Sal",
+            "Harina de Trigo",
+            "Naranja",
+            "Polvo para Hornear",
+            "Canela",
+            "Harina Integral",
+            "Azucar Morena",
+            "Hojuelas de Avena",
+        ]
+        #Tupla de Ingredientes de cajas
+        ingredientes_de_caja = [
+            ("Mantequilla",24),
+            ("Huevo",22),
+            ("Manteca Vegetal",24),
+            ("Manteca de Cerdo",24),
+            ("Copoz de Avena",40)
+        ]
+
+
+        if tipo_compra == 'bulto':
+            if nombreMateria in ingredientes_de_bultos:
+                if nombreMateria in [nombre for nombre, valor_unidad in ingredientes_con_valores]:
+                    valor_unidad = [valor_unidad for nombre, valor_unidad in ingredientes_con_valores if nombre == nombreMateria][0]
+                    if nombreMateria in [nombre for nombre, porcentaje in ingredientes_con_cascara_porcentaje]:
+                        porcentaje_cascara = [porcentaje for nombre, porcentaje in ingredientes_con_cascara_porcentaje if nombre == nombreMateria][0]
+
+                        gramos_ajustados = float(cantidad) * float(campoKilosBulto) - (float(cantidad) * float(campoKilosBulto) * float(porcentaje_cascara) / 100)
+                        porcentaje = float((kilos_ajustados/float(valor_unidad*50))*100)
+                        flash("porcentaje: " + str(porcentaje))
+                        flash("Kilos ajustados" , kilos_ajustados)
+                    else:
+                        kilos_ajustados = float(cantidad) * float(campoKilosBulto)
+                        flash("Kilos ajustados" , kilos_ajustados)
+                else:
+                    flash("Este ingrediente no puede ser encontrado.")
+            else:
+                flash("Este ingrediente no puede ser comprado en bulto.")
+        elif tipo_compra == 'caja':
+            if nombreMateria in [nombre for nombre, _ in ingredientes_de_caja]:
+                if nombreMateria in [nombre for nombre, valor_unidad in ingredientes_con_valores]:
+                    valor_unidad = [valor_unidad for nombre, valor_unidad in ingredientes_con_valores if nombre == nombreMateria][0]
+                    if nombreMateria in [nombre for nombre, porcentaje in ingredientes_con_cascara_porcentaje]:
+                        porcentaje_cascara = [porcentaje for nombre, porcentaje in ingredientes_con_cascara_porcentaje if nombre == nombreMateria][0]
+                        datos_sin_porcentaje= float(campoKilosCaja) * float(valor_unidad)
+                        datos_de_porcentaje = (datos_sin_porcentaje * float(porcentaje_cascara) / 100)
+                        gramos_ajustados =datos_sin_porcentaje - datos_de_porcentaje
+                        porcentaje = float((gramos_ajustados/float(valor_unidad*50))*100)
+                    else:
+                        gramos_ajustados = float(cantidad) * float(valor_unidad)
+                else:
+                    flash("Este ingrediente no puede ser encontrado.")
+            else:
+                flash("Este ingrediente no puede ser comprado por caja.")
+        elif tipo_compra == 'unidad':
+            if nombreMateria in [nombre for nombre, _ in ingredientes_con_valores]:
+                valor_unidad = [valor_unidad for nombre, valor_unidad in ingredientes_con_valores if nombre == nombreMateria][0]
+                gramos_ajustados = float(cantidad) * float(valor_unidad)
+                if nombreMateria in [nombre for nombre, porcentaje in ingredientes_con_cascara_porcentaje]:
+                    porcentaje_cascara = [porcentaje for nombre, porcentaje in ingredientes_con_cascara_porcentaje if nombre == nombreMateria][0]
+                    gramos_ajustados -= (float(cantidad) * float(valor_unidad) * float(porcentaje_cascara) / 100)
+                    porcentaje = float((gramos_ajustados/float(valor_unidad*50))*100)
+            else:
+                flash("Este ingrediente no puede ser comprado por unidad.")
+        else:
+            flash("Tipo de compra no válido.")
+
+        if nombreMateria in ingredientes_liquidos:
+            idMedida = 3
+        elif nombreMateria == "Huevo":
+            idMedida = 1
+        else:
+            idMedida = 2
+
+        materia_prima_existente = MateriaPrima.query.get(id_materiaPrima)
+
+        if materia_prima_existente:
+            materia_prima_existente.nombreMateria = nombreMateria
+            materia_prima_existente.precioCompra = precio
+            materia_prima_existente.cantidad = cantidad
+            materia_prima_existente.idMedida = idMedida
+            materia_prima_existente.idProveedor = proveedor_id
+
+            try:
+                db.session.commit()
+                flash("Materia prima actualizada correctamente.")
+            except Exception as e:
+                db.session.rollback()
+                flash("Error al actualizar la materia prima en la base de datos: " + str(e))
+        else:
+            flash("La materia prima con el ID proporcionado no existe en la base de datos.")
+
+        detalle_existente = Detalle_materia_prima.query.filter_by(idMateriaPrima=id_materiaPrima).first()
+
+        if detalle_existente:
+
+            detalle_existente.fechaCompra = fechaCom
+            detalle_existente.fechaVencimiento = fechaVen
+            detalle_existente.cantidadExistentes = gramos_ajustados
+            detalle_existente.porcentaje = porcentaje
+
+            try:
+                db.session.commit()
+                flash("Detalle de materia prima actualizado correctamente.")
+            except Exception as e:
+                db.session.rollback()
+                flash("Error al actualizar el detalle de materia prima en la base de datos: " + str(e))
+        else:
+            flash("El detalle de materia prima correspondiente al ID proporcionado no existe en la base de datos.")
+    return redirect(url_for('inventario'))
+
+@app.route("/eliminar_inventario", methods=['POST'])
+def eliminar_inventario():
+    id_detalle_prima = int(request.form.get("idDetallePrima"))
+    detalle_prima = Detalle_materia_prima.query.get(id_detalle_prima)
+    
+    if detalle_prima:
+        detalle_prima.estatus = 0
+        db.session.commit()
+        mensaje = "Materia prima y detalle eliminados correctamente."
+        flash(mensaje)
+    else:
+        mensaje = "Materia prima o detalle no encontrados."
+        flash(mensaje)
+    
+    return redirect(url_for('proveedor'))
+
+@app.route("/registrar_merma", methods=['POST'])
+def registrar_merma():
+    id_detalle_prima = ""
+    cantidad_merma = 0
+    merma = forms.InventarioForm(request.form)
+    if request.method == 'POST':
+        id_detalle_prima = int(request.form.get("idDetalle"))
+        cantidad_merma = float(merma.cantidad.data)
+
+        detalle_prima = Detalle_materia_prima.query.get(id_detalle_prima)
+
+        if detalle_prima:
+            cantidad_existente = detalle_prima.cantidadExistentes
+            print("Cantidad existente: ", cantidad_existente)
+            if cantidad_existente is not None and cantidad_existente >= cantidad_merma:
+                detalle_prima.cantidadExistentes -= cantidad_merma
+                db.session.commit()
+
+                nueva_merma = mermaInventario(
+                        cantidadMerma=cantidad_merma,
+                        idMateriaPrima=id_detalle_prima
+                    )
+                db.session.add(nueva_merma)
+                db.session.commit()
+
+                mensaje = "Merma registrada correctamente."
+                flash(mensaje)
+            elif cantidad_existente is not None:
+                mensaje = "La cantidad de merma supera la cantidad existente."
+                flash(mensaje)
+            else:
+                mensaje = "Cantidad existente no disponible para el detalle de materia prima."
+                flash(mensaje)
+        else:
+            mensaje = "Detalle de materia prima no encontrado."
+            flash(mensaje)
+
+    return redirect(url_for('inventario'))
+
+# Fin del Modulo de Materia Prima
+
+@app.route('/recetas', methods=['GET', 'POST'])
+@login_required
 def recetas():
     getAllingredientes = getAllIngredientes()
     nueva_galleta_form = forms.NuevaGalletaForm()
     ingredientes = []
     productos = []
+    productos_detalle = db.session.query(Producto).all()
 
-    productos_detalle = db.session.query(Producto, Detalle_producto).outerjoin(Detalle_producto, Producto.idProducto == Detalle_producto.idProducto).filter(and_(Producto.estatus == 1)).all()
-    for producto, detalle in productos_detalle:
-    # Verificar si el producto tiene un estado activo (estatus = 1)
-        if producto.estatus == 1:
-            ingredientes_asociados = db.session.query(MateriaPrima, Detalle_receta).join(Detalle_receta, MateriaPrima.idMateriaPrima == Detalle_receta.idMateriaPrima).filter(Detalle_receta.idReceta == detalle.idProducto).all()
+    for producto in productos_detalle:
+        fecha_vencimiento_producto = ''
+        cantidad_existentes_producto = ''
             
-            ingredientes_serializados = []
-            for ingrediente, detalle_receta in ingredientes_asociados:
-                ingrediente_dict = {
-                    'id': ingrediente.idMateriaPrima,
-                    'nombre': ingrediente.nombreMateria,
-                    'cantidad': detalle_receta.porcion
-                }
-                ingredientes_serializados.append(ingrediente_dict)
-
-            ingredientes_serializados_json = json.dumps(ingredientes_serializados)
+        ingredientes_asociados = db.session.query(MateriaPrima, Detalle_receta).join(Detalle_receta, MateriaPrima.idMateriaPrima == Detalle_receta.idMateriaPrima).filter(Detalle_receta.idReceta == producto.idProducto).all()
             
-            producto_dict = {
-                'idProducto': producto.idProducto,
-                'nombreProducto': producto.nombreProducto,
-                'precioProduccion': producto.precioProduccion,
-                'precioVenta': producto.precioVenta,
-                'fotografia': producto.fotografia,
-                'cantidadExistentes': detalle.cantidadExistentes,
-                'ingredientes': ingredientes_serializados_json
+        ingredientes_serializados = []
+        for ingrediente, detalle_receta in ingredientes_asociados:
+            ingrediente_dict = {
+                'id': ingrediente.idMateriaPrima,
+                'nombre': ingrediente.nombreMateria,
+                'cantidad': detalle_receta.porcion
             }
+            ingredientes_serializados.append(ingrediente_dict)
+            
+        ingredientes_serializados_json = json.dumps(ingredientes_serializados)
 
-            productos.append(producto_dict)
+        producto_dict = {
+            'idProducto': producto.idProducto,
+            'nombreProducto': producto.nombreProducto,
+            'precioProduccion': producto.precioProduccion,
+            'precioVenta': producto.precioVenta,
+            'fotografia': producto.fotografia,
+            'estatus': producto.estatus,
+            'cantidadExistentes': cantidad_existentes_producto,
+            'fechaVencimiento': fecha_vencimiento_producto,
+            'ingredientes': ingredientes_serializados_json
+        }
+
+        productos.append(producto_dict)
 
     #if len(productos) == 0:
     #    productos.append({})
 
-    if request.method == 'POST' and nueva_galleta_form.validate():
+    if request.method == 'POST' :
         nombre_galleta = nueva_galleta_form.nombre_galleta.data
         precio_produccion = nueva_galleta_form.precio_produccion.data
         precio_venta = nueva_galleta_form.precio_venta.data
@@ -249,8 +699,8 @@ def recetas():
         db.session.add(nuevo_producto)
         db.session.commit()
 
-        detalle_producto = Detalle_producto(fechaVencimiento=fechaCaducidad, cantidadExistentes=0, idProducto=nuevo_producto.idProducto)
-        db.session.add(detalle_producto)
+        #detalle_producto = Detalle_producto(fechaVencimiento=fechaCaducidad, cantidadExistentes=0, idProducto=nuevo_producto.idProducto)
+        #db.session.add(detalle_producto)
         nueva_receta = Receta(idMedida=1, idProducto=nuevo_producto.idProducto)
         db.session.add(nueva_receta)
         db.session.commit()
@@ -270,6 +720,7 @@ def recetas():
     return render_template('receta.html', form=nueva_galleta_form, ingredientes=getAllingredientes, productos=productos)
 
 @app.route('/editar_producto', methods=['GET', 'POST'])
+@login_required
 def editar_producto():
     getAllingredientes = getAllIngredientes()
     nueva_galleta_form = forms.NuevaGalletaForm()
@@ -277,7 +728,6 @@ def editar_producto():
     detalle_productos = Detalle_producto.query.all()
     fotografia_base64 = None
     id_producto = None
-
     if request.method == 'POST':
         id_producto = request.form.get('product')
         nombre_producto = request.form.get('nombre_producto')
@@ -296,8 +746,8 @@ def editar_producto():
             fotografia_base64 = base64.b64encode(fotografia.read()).decode('utf-8')
             producto.fotografia = fotografia_base64
 
-        detalle_producto = Detalle_producto.query.filter_by(idProducto=id_producto).first()
-        detalle_producto.cantidadExistentes = cantidad_existentes
+        #detalle_producto = Detalle_producto.query.filter_by(idProducto=id_producto).first()
+        #detalle_producto.cantidadExistentes = cantidad_existentes
 
         ingredientes_presentes = []
 
@@ -340,26 +790,163 @@ def editar_producto():
     return render_template('receta.html', form=nueva_galleta_form, ingredientes=getAllingredientes, productos=productos)
 
 @app.route('/eliminar_logica_producto', methods=['POST'])
+@login_required
 def eliminar_producto():
     id_producto = None
+    fecha_vencimiento = request.form.get('fecha_vencimiento')
+    accion = request.form.get('accion')
     if request.method == 'POST':
         for key, value in request.form.items():
             if key.startswith('id_producto_'):
                 id_producto = value        
         producto = Producto.query.get(id_producto)
-
-        if producto:
-            producto.estatus = False 
-            db.session.commit()
-            flash('¡El producto ha sido eliminado!', 'success')
-
-            return redirect(url_for('recetas'))
-        else:
-            flash('No se encontró ningún producto con el ID proporcionado', 'error')
-            return 'No se encontró ningún producto con el ID proporcionado'
+        if accion == 'eliminar':
+            if producto:
+                producto.estatus = False
+                db.session.commit()
+                flash('¡El producto ha sido eliminado lógicamente!', 'success')
+                return redirect(url_for('recetas'))
+            else:
+                flash('No se encontró ningún producto con el ID proporcionado', 'error')
+                return 'No se encontró ningún producto con el ID proporcionado'
+        elif accion =='activar':
+            if producto:
+                producto.estatus = True
+                db.session.commit()
+                flash('¡El producto ha sido activado lógicamente!', 'success')
+                return redirect(url_for('recetas'))
+            else:
+                flash('No se encontró ningún producto con el ID proporcionado', 'error')
+                return 'No se encontró ningún producto con el ID proporcionado'
     else:
         flash('No se recibió una solicitud POST', 'error')
         return 'No se recibió una solicitud POST'
+
+@app.route('/producir', methods=['POST'])
+@login_required
+def producir():
+    if request.method == 'POST':
+        cantidadProduccion = 40
+        cantidadMerma = int(request.form.get('cantidadMerma')) if request.form.get('cantidadMerma') else 0
+        idProducto = int(request.form.get('productoSeleccionado')) if request.form.get('productoSeleccionado') else 0
+        fechaVencimiento = request.form.get('fechaVencimiento') if request.form.get('fechaVencimiento') else 0
+        print('fechaVencimiento')
+        print(fechaVencimiento)
+        if idProducto == 0 or fechaVencimiento == 0:
+            flash('Por favor, completa todos los campos correctamente', 'error')
+            return redirect(url_for('productos'))
+        detalle_producto = Detalle_producto(
+            fechaVencimiento=fechaVencimiento,
+            cantidadExistentes=cantidadProduccion - cantidadMerma,
+            idProducto=idProducto
+        )
+        db.session.add(detalle_producto)
+        db.session.commit()
+
+        receta = Receta.query.filter_by(idProducto=idProducto).first()
+        if receta:
+            detalles_receta = Detalle_receta.query.filter_by(idReceta=receta.idReceta).all()
+            for detalle in detalles_receta:
+                materia_prima = MateriaPrima.query.get(detalle.idMateriaPrima)
+                cantidad_necesaria = detalle.porcion
+                detalle_materia_prima = Detalle_materia_prima.query.filter_by(idMateriaPrima=materia_prima.idMateriaPrima, estatus=1).filter(Detalle_materia_prima.cantidadExistentes > 0).first()
+                if detalle_materia_prima:
+                    detalle_materia_prima.cantidadExistentes -= cantidad_necesaria
+                    db.session.commit()
+                else:
+                    flash(f'No se encontró ingriendientes en existencia para {materia_prima.nombreMateria}', 'error')
+                    return redirect(url_for('productos'))
+            flash('La galletas se han horneado!', 'success')
+            return redirect(url_for('productos'))
+    else:
+        flash('No se recibió una solicitud POST', 'error')
+        return 'No se recibió una solicitud POST'
+
+@app.route('/del_act_logica_produccion', methods=['POST'])
+@login_required
+def eliminar_logica_produccion():
+    id_producto = None
+    fecha_vencimiento = request.form.get('fecha_vencimiento1')
+    accion = request.form.get('accion')
+
+    for key, value in request.form.items():
+            if key.startswith('id_producto_'):
+                id_producto = value     
+    if accion == 'eliminar':   
+        detalle_producto = Detalle_producto.query.filter_by(idProducto=id_producto, fechaVencimiento=fecha_vencimiento).first()
+        if detalle_producto:
+            detalle_producto.estatus = False
+            db.session.commit()
+            
+            flash('¡El detalle del producto ha sido eliminado lógicamente!', 'success')
+    elif accion == 'activar':
+        detalle_producto = Detalle_producto.query.filter_by(idProducto=id_producto, fechaVencimiento=fecha_vencimiento).first()
+        if detalle_producto:
+            detalle_producto.estatus = True
+            db.session.commit()
+            
+            flash('¡El detalle del producto ha sido activado lógicamente!', 'success')
+    else:
+        flash('No se encontró ningún detalle de producto con el ID y fecha proporcionados', 'error')
+
+    return redirect(url_for('productos'))
+
+@app.route('/productos', methods=['GET', 'POST'])
+@login_required
+def productos():
+    productos = []
+    products_activos = []
+    producto_dict = {}
+
+    productos_activos = Producto.query.filter_by(estatus=1).all()
+    for producto in productos_activos:
+        producto_dict = {
+            'idProducto': producto.idProducto,
+            'nombreProducto': producto.nombreProducto,
+            'precioProduccion': producto.precioProduccion,
+            'precioVenta': producto.precioVenta,
+            'fotografia': producto.fotografia,
+        }
+    if len(producto_dict) > 0:
+        products_activos.append(producto_dict)
+
+    productos_detalle = db.session.query(Producto, Detalle_producto).outerjoin(Detalle_producto, Producto.idProducto == Detalle_producto.idProducto).filter(Producto.estatus == 1).all()
+    productos_detalle_filtrados = [(producto, detalle) for producto, detalle in productos_detalle if detalle is not None]
+
+    for producto, detalle in productos_detalle_filtrados:
+        if detalle is not None:
+            fecha_vencimiento_producto = detalle.fechaVencimiento.strftime("%Y-%m-%d %H:%M:%S") if detalle.fechaVencimiento else ''
+            cantidad_existentes_producto = detalle.cantidadExistentes if detalle.cantidadExistentes else ''
+            detalle_estatus = detalle.estatus
+
+        ingredientes_asociados = db.session.query(MateriaPrima, Detalle_receta).join(Detalle_receta, MateriaPrima.idMateriaPrima == Detalle_receta.idMateriaPrima).filter(Detalle_receta.idReceta == producto.idProducto).all()
+        
+        ingredientes_serializados = []
+        for ingrediente, detalle_receta in ingredientes_asociados:
+            ingrediente_dict = {
+                'id': ingrediente.idMateriaPrima,
+                'nombre': ingrediente.nombreMateria,
+                'cantidad': detalle_receta.porcion
+            }
+            ingredientes_serializados.append(ingrediente_dict)
+
+        ingredientes_serializados_json = json.dumps(ingredientes_serializados)
+        
+        producto_dict = {
+            'idProducto': producto.idProducto,
+            'nombreProducto': producto.nombreProducto,
+            'precioProduccion': producto.precioProduccion,
+            'precioVenta': producto.precioVenta,
+            'fotografia': producto.fotografia,
+            'detalle_estatus': detalle_estatus,
+            'cantidadExistentes': cantidad_existentes_producto,
+            'fechaVencimiento': fecha_vencimiento_producto,
+            'ingredientes': ingredientes_serializados_json
+        }
+
+        productos.append(producto_dict)
+
+    return render_template('productos.html', productos=productos, products=products_activos)
 
 def getAllIngredientes():
     ingredientes = MateriaPrima.query.all()

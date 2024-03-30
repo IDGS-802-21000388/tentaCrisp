@@ -35,11 +35,23 @@
                             <form method="POST" action="/eliminar_logica_producto" class="eliminarForm">
                                 <input type="hidden" name="id_producto_{{ producto['idProducto'] }}"
                                     value="{{ producto['idProducto'] }}">
+                                <input type="hidden" name="fecha_vencimiento" value="{{ producto['fechaVencimiento'] }}">
+                                <input type="hidden" name="fecha_vencimiento1" value="">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                                <button type="button" style="background: transparent;" class="btnLogicoDel"
-                                    onclick="confirmarEliminacion('{{ producto.idProducto }}')">
-                                    <i class="fa-solid fa-trash" style="color: #c12525;"></i>
-                                </button>
+                                {% if producto['estatus'] %}
+                                    <button data-fecha="{{ producto['fechaVencimiento'] }}" type="button" style="background: transparent;" class="btnLogicoDel"
+                                        onclick="confirmarAccion('{{ producto.idProducto }}', 'eliminar')">
+                                        <i class="fa-solid fa-trash" style="color: #c12525;"></i>
+                                    </button>
+                                    <input type="hidden" name="accion" value="eliminar">
+                                {% else %}
+                                    <!-- Botón para activar el detalle del producto -->
+                                    <button data-fecha="{{ producto['fechaVencimiento'] }}" type="button" style="background: transparent;" class="btnActivar"
+                                        onclick="confirmarAccion('{{ producto.idProducto }}', 'activar')">
+                                        <i class="fa-solid fa-check" style="color: #28a745;"></i>
+                                    </button>
+                                    <input type="hidden" name="accion" value="activar">
+                                {% endif %}
                             </form>
                         </td>
                         <td>
@@ -119,13 +131,13 @@
                                         </div>
                                     </div>
                                     <div class="col-md-10">
-                                        <div class="mb-3 row">
+                                        <!-- <div class="mb-3 row">
                                             <label id="lblFechaCaducidad" for="txtNuevaGalleta"
                                                 class="form-label col-sm-4">Fecha de caducidad:</label>
                                             <div class="col-sm-8" style="margin-left: -10%;">
                                                 {{ render_field_producto(form.fechaCaducidad) }}
                                             </div>
-                                        </div>
+                                        </div> -->
                                     </div>
                                     <div class="mb-3 row">
                                         <div id="gelletaHorneada" class="col">

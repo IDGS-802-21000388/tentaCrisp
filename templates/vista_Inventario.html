@@ -2,154 +2,278 @@
 
 {% block content %}
 {%import "_macros.html" as macro%}
-<div id="bodyTablaProveedor" data-materia-prima="{{ datos_materia_prima | tojson }}">
-    <div id="#containerProductos" style="width: -moz-available;">
-        <div class="table-container">
-            <table id="tblProveedor" class="table table-hover table-sm">
+<div id="bodyTablaProveedor" onblur="clean()">
+    <div id="#containerProductos" style="width: -moz-available;" onblur="clean()">
+        <h1 class="text-center">Inventario</h1>
+        <table id="tblMateriaPrima" class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th>Nombre Materia</th>
+                    <th>Cantidad Existentes</th>
+                    <th>Fecha Vencimiento</th>
+                    <th>Porcentaje</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dato in datos_procesados %}
+                <tr>
+                    <td>{{ dato.nombre }}</td>
+                    <td>{{ dato.cantidad_existente }}</td>
+                    <td>{{ dato.fecha_vencimiento }}</td>
+                    <td>{{ dato.porcentaje }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+
+        <div id="ultimosIngredientes" style="display: none;">
+            <h1 class="text-center">Ultimos Ingredientes Ingresados</h1>
+            <table id="tblMateriaPrimaDatos" class="table table-hover table-sm">
                 <thead>
                     <tr>
-                        <th id="tblCabecera">Nombre del producto</th>
-                        <th id="tblCabecera">Existencia</th>
-                        <th id="tblCabecera">Tipo</th>
-                        <th id="tblCabecera">Precio Compra</th>
-                        <th id="tblCabecera">Fecha Compra</th>
-                        <th id="tblCabecera">Fecha Vencimiento</th>
-                        <th id="tblCabecera">Porcentaje</th>
-                        <th></th>
-                        <th></th>
+                        <th>Nombre Materia</th>
+                        <th>Precio Compra</th>
+                        <th>Cantidad</th>
+                        <th>Cantidad Existentes</th>
+                        <th>Tipo</th>
+                        <th>Fecha Compra</th>
+                        <th>Fecha Vencimiento</th>
+                        <th>Porcentaje</th>
+                        <th>Proveedor</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-
+                    {% for materia_prima in materias_primas %}
+                    {% for detalle_prima in detalle_primas %}
+                    {% if materia_prima.idMateriaPrima == detalle_prima.idMateriaPrima %}
+                    <tr>
+                        <td>{{ materia_prima.nombreMateria }}</td>
+                        <td>{{ materia_prima.precioCompra }}</td>
+                        <td>{{ materia_prima.cantidad }}</td>
+                        <td>{{ detalle_prima.cantidadExistentes }}</td>
+                        <td>{{ materia_prima.medida.tipoMedida }}</td>
+                        <td>{{ detalle_prima.fechaCompra }}</td>
+                        <td>{{ detalle_prima.fechaVencimiento }}</td>
+                        <td>{{ detalle_prima.porcentaje }}</td>
+                        <td>{{ materia_prima.proveedor.nombreProveedor }}</td>
+                        <td>
+                            <button class="btnEditarMateria" data-id="{{ materia_prima.idMateriaPrima }}"
+                                data-nombreProducto="{{ materia_prima.nombreMateria }}"
+                                data-precioCompra="{{ materia_prima.precioCompra }}"
+                                data-cantidad="{{ materia_prima.cantidad }}" data-tipo="{{ materia_prima.tipo }}"
+                                data-fechaCompra="{{ detalle_prima.fechaCompra }}"
+                                data-fechaVencimiento="{{ detalle_prima.fechaVencimiento }}"
+                                data-porcentaje="{{ detalle_prima.porcentaje }}"
+                                data-proveedor="{{ materia_prima.proveedor }}">
+                                <i class="fa-solid fa-pen-to-square" style="color: #57351f;"></i>
+                            </button>
+                            <button class="btnMerma" data-id="{{ materia_prima.idMateriaPrima }}"
+                                data-nombreProducto="{{ materia_prima.nombreMateria }}"
+                                data-precioCompra="{{ materia_prima.precioCompra }}"
+                                data-cantidad="{{ materia_prima.cantidad }}" data-tipo="{{ materia_prima.tipo }}"
+                                data-fechaCompra="{{ detalle_prima.fechaCompra }}"
+                                data-fechaVencimiento="{{ detalle_prima.fechaVencimiento }}"
+                                data-porcentaje="{{ detalle_prima.porcentaje }}"
+                                data-proveedor="{{ materia_prima.proveedor }}">
+                                <i class="fa-solid fa-cloud-meatball"style="color: #57351f;"></i>
+                            </button>
+                            <form action="/eliminar_inventario" method="POST" style="display: inline;">
+                                <input type="hidden" name="idDetallePrima" value="{{ materia_prima.idMateriaPrima }}">
+                                <button type="submit"><i class="fa-solid fa-trash" style="color: #c12525;"></i></button>
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            </form>
+                            
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                    {% endfor %}
                 </tbody>
-            </table>        
+            </table>
         </div>
 
         <!-- modal material prima-->
-        <div class="modal fade" id="modalMaterialPrima" tabindex="-1" aria-labelledby="modalMaterialPrimaLabel" aria-hidden="true">
+        <div class="modal fade" id="modalMaterialPrima" tabindex="-1" aria-labelledby="modalMaterialPrimaLabel"
+            aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content" id="modalMaterialPrima">
                     <div class="modal-header">
-                        <h1 class="modal-title fs-5" id="modalMaterialPrimaLabel"><i class="fa-solid fa-cookie-bite fa-lg" style="color: #826455;"></i> Agregar Material Prima</h1>
+                        <h1 class="modal-title fs-5" id="modalMaterialPrimaLabel"><i
+                                class="fa-solid fa-cookie-bite fa-lg" style="color: #826455;"></i> Agregar Material
+                            Prima</h1>
                     </div>
-                    <form class="needs-validation" id="formDataProductosNuevos" name="formDataProductosNuevos" method="POST">
+                    <form class="needs-validation" action="{{ url_for('inventario') }}" id="formDataProductosNuevos"
+                        name="formDataProductosNuevos" method="POST">
                         <div class="modal-body" id="productoDetails"></div>
                         <div class="container">
                             <div class="row align-items-center">
                                 <input type="text" id="txtIdMateria" style="display: none;" class="form-control">
 
-                                <div id="materialPrima" class="d-flex col-lg-8">
-                                    {{macro.render_field(form.nombre,class="form-control")}}
+                                <div id="materialPrima" class="col-8">
+                                    {{macro.render_field(form.nombre,class="form-control",id="txtNombre")}}
                                 </div>
 
-                                <div id="materialPrima" class="d-flex col-lg-8">
-                                    {{macro.render_field(form.precio,class="form-control")}}
+                                <div id="materialPrima" class="col-8">
+                                    {{macro.render_field(form.precio,class="form-control",id="txtPrecioCompra")}}
                                 </div>
 
-                                <div id="materialPrima" class="d-flex col-lg-8">
-                                    {{macro.render_field(form.cantidad,class="form-control")}}
+                                <div id="materialPrima" class="col-8">
+                                    {{macro.render_field(form.cantidad,class="form-control",id="txtCantidad")}}
                                 </div>
 
 
-                                <div id="materialPrima" class="d-flex col-lg-8">
+                                <div id="materialPrima" class="col-8">
+                                    <label>Tipo de compra</label>
                                     <select id="tipo_compra" name="tipo_compra" class="form-select">
-                                        <option value="bulto" {% if form.tipo_compra.data == 'bulto' %} selected {% endif %}>Bulto</option>
-                                        <option value="caja" {% if form.tipo_compra.data == 'caja' %} selected {% endif %}>Caja</option>
-                                        <option value="paquete" {% if form.tipo_compra.data == 'paquete' %} selected {% endif %}>Paquete</option>
-                                        <option value="unidad" {% if form.tipo_compra.data == 'unidad' %} selected {% endif %}>Unidad</option>
+                                        <option value="seleccionar" selected>Seleccionar tipo de compra</option>
+                                        <option value="bulto">Bulto</option>
+                                        <option value="caja">Caja</option>
+                                        <option value="unidad">Unidad</option>
                                     </select>
-                                    
+
+                                    <div id="campo_extra_bulto" style="display: none;">
+                                        <label for="kilos">Kilos:</label>
+                                        <input type="text" id="kilos_bulto" name="kilos_bulto">
+                                    </div>
+
+                                    <div id="campo_extra_caja" style="display: none;">
+                                        <label for="numero_piezas">Kilos y/o Piezas:</label>
+                                        <input type="text" id="numero_piezas_caja" name="numero_piezas_caja">
+                                    </div>
+
                                 </div>
 
-                                <div id="materialPrima" class="d-flex col-lg-8 ">
-                                    {{macro.render_field(form.fechaVen,class="form-control")}}
+                                <div id="materialPrima" class="col-8 ">
+                                    {{macro.render_field(form.fechaVen,class="form-control",id="txtFechaVencimiento")}}
                                 </div>
 
-                                <div id="materialPrima" class="d-flex col-lg-8">
-                                    {{macro.render_field(form.fechaCom,class="form-control")}}
-                                </div>
-
-                                <div id="materialPrima" class="d-flex col-lg-8">
-                                    <select id="forma_compra" name="forma_compra" class="form-select">
-                                        <option value="Provedor" {% if form.forma_compra.data == 'Provedor' %} selected {% endif %}>Proveedor</option>
-                                        <option value="Manual" {% if form.forma_compra.data == 'Manual' %} selected {% endif %}>Manual</option>
+                                <div id="materialPrima" class="col-8">
+                                    <label for="">Repartidor</label>
+                                    <select id="proveedor" name="proveedor" class="form-select">
+                                        {% for proveedor in proveedores %}
+                                        <option value="{{ proveedor.idProveedor }}">{{ proveedor.nombreAtiende }} -- {{ proveedor.nombreProveedor }}
+                                        </option>
+                                        {% endfor %}
                                     </select>
-                                    
                                 </div>
+
+
                             </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                            <button id="btnSaveMaterial" type="button" class="btn btn-success" onclick="moduloInventario.guardarMateriaPrima()">Guardar Material Prima</button>
+                            <button id="btnSaveMaterial" type="submit" class="btn btn-success">Guardar Material
+                                Prima</button>
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                         </div>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     </form>
                 </div>
             </div>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         </div>
 
         <!-- modal editar -->
-        <div class="modal fade" id="modalMateriaEditar" tabindex="-1" aria-labelledby="modalMateriaEditarsLabel" aria-hidden="true">
+        <div class="modal fade" id="modalMateriaEditar" tabindex="-1" aria-labelledby="modalMateriaEditarsLabel"
+            aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content" id="modalMateriaEditar">
                     <div class="modal-header">
-                        <h1 class="modal-title fs-5"><i class="fa-solid fa-cookie-bite fa-lg" style="color: #826455;"></i> Editar materia Prima</h1>
+                        <h1 class="modal-title fs-5"><i class="fa-solid fa-cookie-bite fa-lg"
+                                style="color: #826455;"></i> Editar materia Prima</h1>
                     </div>
-                    <form class="needs-validation" id="formDataProductosEditar" name="formDataProductosEditar" method="POST">
+                    <form action="{{ url_for('editar_inventario') }}" class="needs-validation" id="formDataProductosEditar" name="formDataProductosEditar"
+                        method="POST">
                         <div class="modal-body" id="productoDetails"></div>
                         <div class="container">
-                            <div class="row align-items-start">
-                                <input type="text" id="txtIdMateriaEditar" style="display: none;" class="form-control">
-                                <div id="materialPrima" class="d-flex col">
-                                    <label id="lblNombre" style="margin-right: 103px;" for="txtNobreMaterial" class="form-label">Nombre:</label>
-                                    <input type="text" id="txtNobreMaterialEditar" class="form-control" placeholder="Nombre del Producto">
+                            <div class="row align-items-center">
+                                <input  type="hidden" id="editIdMateria" name="editIdMateria">
+
+                                <div id="materialPrima" class="col-8">
+                                    {{macro.render_field(form.nombre,class="form-control",id="editNombreProducto")}}
                                 </div>
 
-                                <div id="materialPrima" class="d-flex col">
-                                    <label id="lblFeCompra" style="margin-right: 32px;" for="txtFechaCompraMaterial" class="form-label">Fecha de Compra:</label>
-                                    <input type="date" id="txtFechaCompraMaterialEditar" class="form-control">
+                                <div id="materialPrima" class="col-8">
+                                    {{macro.render_field(form.precio,class="form-control",id="editPrecioCompra")}}
                                 </div>
 
-                                <div id="materialPrima" class="d-flex col">
-                                    <label id="lblFeVenta"  for="txtFechaVenciMaterial" class="form-label">Fecha de Vencimiento:</label>
-                                    <input type="date" id="txtFechaVenciMaterialEditar" class="form-control">
+                                <div id="materialPrima" class="col-8">
+                                    {{macro.render_field(form.cantidad,class="form-control",id="editCantidad")}}
                                 </div>
 
 
-                                <div id="materialPrima" class="d-flex col">
-                                    <label id="lblCantidad" style="margin-right: 93px;" for="txtCantidadMaterial" class="form-label">Cantidad:</label>
-                                    <input type="number" id="txtCantidadMaterialEditar" class="form-control" placeholder="Cantidad">
+                                <div id="materialPrima" class="col-8">
+                                    <label>Tipo de compra</label>
+                                    <select id="tipo_compraEdit" name="tipo_compraEdit" class="form-select">
+                                        <option value="seleccionar" selected>Seleccionar tipo de compra</option>
+                                        <option value="bulto">Bulto</option>
+                                        <option value="caja">Caja</option>
+                                        <option value="unidad">Unidad</option>
+                                    </select>
+
+                                    <div id="campo_extra_bulto_Edit" style="display: none;">
+                                        <label for="kilos">Kilos:</label>
+                                        <input type="text" id="kilos_bulto_edit" name="kilos_bulto_edit">
+                                    </div>
+
+                                    <div id="campo_extra_caja_Edit" style="display: none;">
+                                        <label for="numero_piezas">Kilos y/o Piezas:</label>
+                                        <input type="text" id="numero_piezas_caja_edit" name="numero_piezas_caja_edit">
+                                    </div>
+
                                 </div>
 
-                                <div id="materialPrima" class="d-flex col ">
-                                    <label id="lblPreCompra" style="margin-right: 30px;" for="txtPrecioCompra" class="form-label">Precio de Compra:</label>
-                                    <input type="text" id="txtPrecioCompraEditar" class="form-control" placeholder="Precio Compra">
+                                <div id="materialPrima" class="col-8 ">
+                                    {{macro.render_field(form.fechaVen,class="form-control",id="editFechaVencimiento")}}
                                 </div>
 
-                                <div id="materialPrima" class="d-flex col">
-                                    <label id="lblPorcentaje" style="margin-right: 84px;"  for="txtPorcentajeMaterial" class="form-label">Porcentaje:</label>
-                                    <input type="number" id="txtPorcentajeMaterialEditar" class="form-control" placeholder="Porcentaje">
-                                    <span class="input-group-text">%</span>
-                                </div>
-
-                                <div id="materialPrima" class="d-flex col">
-                                    <label id="lblMedida" style="margin-right: 107px;" for="txtMedidaMaterial" class="form-label">Medida:</label>
-                                    <select id="txtMedidaMaterialEditar" class="form-select" aria-label="Default select example">
-                                        <option value="1">PZ</option>
-                                        <option value="2">G</option>
-                                        <option value="3">KG</option>
-                                        <option value="4">LB</option>
-                                        <option value="5">OZ</option>
-                                        <option value="6">ML</option>
-                                        <option value="7">L</option>
-                                        <option value="8">GAL</option>
-                                        <option value="9">CUP</option>
+                                <div id="materialPrima" class="col-8">
+                                    <label for="">Repartidor</label>
+                                    <select id="proveedor" name="proveedor" class="form-select">
+                                        {% for proveedor in proveedores %}
+                                        <option value="{{ proveedor.idProveedor }}">{{ proveedor.nombreAtiende }} -- {{ proveedor.nombreProveedor }}
+                                        </option>
+                                        {% endfor %}
                                     </select>
                                 </div>
-                            </div>
+                        </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                            <button id="btnEditarGalleta" type="button" class="btn btn-success" onclick="moduloInventario.guardarMateriaPrima()">Actualizar Materia Prima</button>
+                            <button id="btnEditarGalleta" type="submit" class="btn btn-success">Actualizar Materia Prima</button>
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!--Modal Merma-->
+        <div class="modal fade" id="modalMerma" tabindex="-1" 
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" id="modalMateriaEditar">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5"><i class="fa-solid fa-cookie-bite fa-lg"
+                                style="color: #826455;"></i> Registrar Merma</h1>
+                    </div>
+                    <form action="{{ url_for('registrar_merma') }}" class="needs-validation"
+                        method="POST">
+                        <div class="modal-body" id="productoDetails"></div>
+                        <div class="container">
+                            <div class="row align-items-center">
+                                <input  type="hidden" id="idDetalle" name="idDetalle">
+
+                                <div id="materialPrima" class="col-8">
+                                    {{macro.render_field(form.cantidad,class="form-control")}}
+                                </div>
+                        </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            <button id="btnMerma" type="submit" class="btn btn-success">Registrar Merma</button>
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                         </div>
                     </form>
                 </div>
@@ -157,10 +281,13 @@
         </div>
 
 
-        <div class="button-container btnEnd">
-            <button class="btn btn-success" id="agregarMaterialPrima" data-bs-toggle="modal" data-bs-target="#modalMaterialPrima">Agregar Material Prima</button>
-
+        <div class="button-container btnEnd" style="margin: 10px;">
+            <button class="btn btn-success" id="agregarMaterialPrima" data-bs-toggle="modal"
+                data-bs-target="#modalMaterialPrima" style="margin: 10px;">Agregar Material Prima</button>
+            <button id="btnVerUltimosIngredientes" class="btn btn-primary" style="margin: 10px;">Ver Últimos Ingredientes Ingresados</button>
+            <button class="btn btn-secondary" onclick="clean()" style="margin: 10px;">Limpiar Campos</button>
         </div>
+
     </div>
 </div>
 {% endblock %}

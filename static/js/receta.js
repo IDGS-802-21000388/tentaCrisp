@@ -60,25 +60,35 @@ $(document).ready(function() {
         },
         "ordering": false,
         retrieve: true
-    }); 
+    });
 });
 
-function confirmarEliminacion(idProducto) {
+function confirmarAccion(idProducto, accion) {
+    let confirmacionTexto = "";
+    let confirmacionColor = "";
+
+    if (accion === "eliminar") {
+        confirmacionTexto = "¡El producto se eliminará de forma lógica!";
+        confirmacionColor = "#3085d6";
+    } else if (accion === "activar") {
+        confirmacionTexto = "¡El producto se activará de forma lógica!";
+        confirmacionColor = "#3085d6";
+    }
+
     Swal.fire({
         title: "¿Estás seguro?",
-        text: "¡El producto se eliminará de forma lógica!",
+        text: confirmacionTexto,
         icon: "warning",
         showCancelButton: true,
-        confirmButtonColor: "#3085d6",
+        confirmButtonColor: confirmacionColor,
         cancelButtonColor: "#d33",
-        confirmButtonText: "Sí, eliminarlo"
+        confirmButtonText: "Sí, continuar"
     }).then((result) => {
         if (result.isConfirmed) {
             document.querySelector(".eliminarForm input[name='id_producto_" + idProducto + "']").parentNode.submit();
         }
     });
 }
-
 
 $(document).on('click', '.btnEditar', function() {
     var nombreProducto = $(this).data('nombre');

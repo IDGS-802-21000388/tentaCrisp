@@ -13,7 +13,6 @@ class Usuario(db.Model, UserMixin):
     rol = db.Column(db.String(30), nullable=False)
     estatus = db.Column(db.Integer, nullable=False, default=1)
     telefono = db.Column(db.String(15), nullable=False, default="")
-    lastToken = db.Column(db.String(100), nullable=True)
     dateLastToken = db.Column(db.DateTime, nullable=True, default=datetime.utcnow)
     def is_active(self):
         return self.estatus != 0
@@ -22,9 +21,9 @@ class Usuario(db.Model, UserMixin):
 
 class LogsUser(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    fecha = db.Column(db.TIMESTAMP, default=datetime.utcnow)
     procedimiento = db.Column(db.String(255), nullable=False)
-    idUsuario = db.Column(db.Integer, db.ForeignKey('usuario.idUsuario'))
+    lastDate = db.Column(db.DateTime, nullable=True, default=datetime.utcnow)
+    idUsuario = db.Column(db.Integer)
 
 class Medida(db.Model):
     idMedida = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -44,18 +43,23 @@ class Proveedor(db.Model):
 class MateriaPrima(db.Model):
     idMateriaPrima = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nombreMateria = db.Column(db.String(45), nullable=False, default="")
-    estatus = db.Column(db.Integer, nullable=False, default=1)
     precioCompra = db.Column(db.Float, nullable=False, default=0.0)
-    porcentaje = db.Column(db.Integer, nullable=False, default=100)
+    cantidad = db.Column(db.Float, nullable=False, default=0.0)
+    estatus = db.Column(db.Integer, nullable=False, default=1)
     idMedida = db.Column(db.Integer, db.ForeignKey('medida.idMedida'))
     idProveedor = db.Column(db.Integer, db.ForeignKey('proveedor.idProveedor'))
+
+    medida = db.relationship('Medida', backref='materias_primas', lazy=True)
 
 class Detalle_materia_prima(db.Model):
     idDetalle_materia_prima = db.Column(db.Integer, primary_key=True, autoincrement=True)
     fechaCompra = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     fechaVencimiento = db.Column(db.DateTime)
     cantidadExistentes = db.Column(db.Float, nullable=False, default=0.0)
+    estatus = db.Column(db.Integer, nullable=False, default=1)
     idMateriaPrima = db.Column(db.Integer, db.ForeignKey('materia_prima.idMateriaPrima'))
+    porcentaje = db.Column(db.Integer, nullable=False, default=100)
+    estatus = db.Column(db.Integer, nullable=False, default=1)
 
 class Producto(db.Model):
     idProducto = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -73,12 +77,19 @@ class Detalle_producto(db.Model):
     idDetalle_producto = db.Column(db.Integer, primary_key=True, autoincrement=True)
     fechaVencimiento = db.Column(db.DateTime)
     cantidadExistentes = db.Column(db.Integer, nullable=False, default=0.0)
+    estatus = db.Column(db.Boolean, nullable=False, default=True)
+
     idProducto = db.Column(db.Integer, db.ForeignKey('producto.idProducto'))
 
 class merma(db.Model):
     idMerma = db.Column(db.Integer, primary_key=True, autoincrement=True)
     cantidadMerma= db.Column(db.Float, nullable=False, default=0.0)
     idProducto = db.Column(db.Integer, db.ForeignKey('producto.idProducto'))
+    idMateriaPrima = db.Column(db.Integer, db.ForeignKey('materia_prima.idMateriaPrima'))
+
+class mermaInventario(db.Model):
+    idMerma = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    cantidadMerma= db.Column(db.Float, nullable=False, default=0.0)
     idMateriaPrima = db.Column(db.Integer, db.ForeignKey('materia_prima.idMateriaPrima'))
 
 class Receta(db.Model):
