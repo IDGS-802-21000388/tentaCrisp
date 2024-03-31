@@ -38,6 +38,10 @@ def unauthorized():
     #flash('Por favor, inicia sesión para acceder a esta página.', 'warning')
     return redirect(url_for('login'))
 
+@app.route('/prueba')
+def prueba():
+    return render_template("layout2.html")
+
 @app.route('/', methods=['GET', 'POST'])
 def login():
     usuario_form = forms.LoginForm(request.form)
@@ -199,6 +203,7 @@ def inventario():
     proveedores = Proveedor.query.all()
     if request.method == 'POST':
         nombreMateria = inventario.nombre.data
+        print("Nombre Materia",nombreMateria)
         precio = inventario.precio.data
         cantidad = inventario.cantidad.data
         tipo_compra = request.form.get('tipo_compra')
@@ -218,14 +223,14 @@ def inventario():
         #Tupla de Productos Liquidos por militros
         ingredientes_liquidos = [
             ("Leche", 1000),
-            ("Vainilla líquida", 560)
+            ("Vainilla", 560)
         ]
         #Tupla de Valores por Unidad
         ingredientes_con_valores = [
             ("Azúcar", 1000),  # 1 kilogramo de azúcar
             ("Mantequilla", 1000),  # 1 kilogramo de mantequilla
             ("Bicarbonato de sodio", 300),  # 300 gramos de bicarbonato de sodio
-            ("Harina de trigo", 1000),  # 1 kilogramo de harina de trigo
+            ("Harina de Trigo", 1000),  # 1 kilogramo de harina de trigo
             ("Huevo", 1900),  # 1.9 kilogramos de huevos
             ("Cerezas en almíbar", 3500),  # 3.5 kilogramos de cerezas en almíbar
             ("Nueces", 1000),  # 1 kilogramo de nueces
@@ -236,13 +241,14 @@ def inventario():
             ("Harina integral", 1000),  # 1 kilogramo de harina integral
             ("Copos de avena", 1000),  # 1 kilogramo de copos de avena
             ("Azúcar moreno", 1000),  # 1 kilogramo de azúcar moreno
-            ("Esencia de vainilla", 500),  # 500 mililitros de esencia de vainilla
+            ("Vainilla", 500),  # 500 mililitros de esencia de vainilla
             ("Chispas de chocolate", 500),  # 500 gramos de chispas de chocolate
             ("Hojuelas de avena", 1000),  # 1 kilogramo de hojuelas de avena
             ("Cerezas", 580),  # 580 gramos de cerezas
             ("Leche", 1000),  # 1 litro de leche
             ("Mermelada de fresa", 980),  # 980 gramos de mermelada de fresa
-            ("Harina", 1000)
+            ("Harina", 1000),
+            ("Azucar Glass", 1000),
         ]
         #Tupla de Ingredientes de bultos
         ingredientes_de_bultos = [
@@ -275,6 +281,7 @@ def inventario():
                         porcentaje_cascara = [porcentaje for nombre, porcentaje in ingredientes_con_cascara_porcentaje if nombre == nombreMateria][0]
 
                         gramos_ajustados = float(cantidad) * float(campoKilosBulto) - (float(cantidad) * float(campoKilosBulto) * float(porcentaje_cascara) / 100)
+                        flash("Kilos ajustados Bulto" , gramos_ajustados)
                         porcentaje = float((gramos_ajustados / (float(valor_unidad) * 50)) * 100)
                         if nombreMateria in ingredientes_liquidos:
                             idMedida = 3
@@ -317,7 +324,7 @@ def inventario():
                             db.session.rollback()
                             flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
                     else:
-                        gramos_ajustados = float(cantidad) * float(campoKilosBulto)
+                        gramos_ajustados = valor_unidad * (float(cantidad) * float(campoKilosBulto))
 
                         if nombreMateria in ingredientes_liquidos:
                             idMedida = 3
@@ -417,7 +424,7 @@ def inventario():
                             flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
 
                     else:
-                        gramos_ajustados = float(cantidad) * float(valor_unidad)
+                        gramos_ajustados = valor_unidad * (float(cantidad) * float(valor_unidad))
                         if nombreMateria in ingredientes_liquidos:
                             idMedida = 3
                         elif nombreMateria == "Huevo":
@@ -511,7 +518,50 @@ def inventario():
                         except Exception as e:
                             db.session.rollback()
                             flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
+                else:
+                    gramos_ajustados = valor_unidad * (float(cantidad) * float(valor_unidad))
+                    if nombreMateria in ingredientes_liquidos:
+                        idMedida = 3
+                    elif nombreMateria == "Huevo":
+                        idMedida = 1
+                    else:
+                        idMedida = 2
+
+                    nueva_materia_prima = MateriaPrima(
+                        nombreMateria=nombreMateria,
+                        precioCompra=precio,
+                        cantidad=cantidad,
+                        idMedida=idMedida,
+                        idProveedor=proveedor_id
+                    )
+                    db.session.add(nueva_materia_prima)
+
+                    try:
+                        db.session.commit()
+                        mensaje = "Materia Prima agregada correctamente."
+                        flash(mensaje)
+                    except Exception as e:
+                        mensaje = "Error al agregar la materia prima a la base de datos: " + str(e)
+                        flash(mensaje)
+                    
+                    ultimo_id_materia_prima = MateriaPrima.query.order_by(MateriaPrima.idMateriaPrima.desc()).first().idMateriaPrima
+                    nuevo_detalle_materia_prima = Detalle_materia_prima(
+                        fechaCompra=fechaCom,
+                        fechaVencimiento=fechaVen,
+                        cantidadExistentes=gramos_ajustados,
+                        idMateriaPrima=ultimo_id_materia_prima,
+                        porcentaje=porcentaje)
+
+                    db.session.add(nuevo_detalle_materia_prima)
+
+                    try:
+                        db.session.commit()
+                        flash("Detalle de materia prima agregado correctamente.")
+                    except Exception as e:
+                        db.session.rollback()
+                        flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
             else:
+                
                 flash("Este ingrediente no puede ser comprado por unidad.")
         else:
             flash("Tipo de compra no válido.")
@@ -582,6 +632,7 @@ def editar_inventario():
     id_materiaPrima = request.form.get('editIdMateria')
     if request.method == 'POST':
         nombreMateria = inventario.nombre.data
+        print("Nombre Materia",nombreMateria)
         precio = inventario.precio.data
         cantidad = inventario.cantidad.data
         tipo_compra = request.form.get('tipo_compraEdit')
@@ -608,7 +659,7 @@ def editar_inventario():
             ("Azúcar", 1000),  # 1 kilogramo de azúcar
             ("Mantequilla", 1000),  # 1 kilogramo de mantequilla
             ("Bicarbonato de sodio", 300),  # 300 gramos de bicarbonato de sodio
-            ("Harina de trigo", 1000),  # 1 kilogramo de harina de trigo
+            ("Harina de Trigo", 1000),  # 1 kilogramo de harina de trigo
             ("Huevo", 1900),  # 1.9 kilogramos de huevos
             ("Cerezas en almíbar", 3500),  # 3.5 kilogramos de cerezas en almíbar
             ("Nueces", 1000),  # 1 kilogramo de nueces
@@ -626,6 +677,7 @@ def editar_inventario():
             ("Leche", 1000),  # 1 litro de leche
             ("Mermelada de fresa", 980),  # 980 gramos de mermelada de fresa
             ("Harina", 1000)
+            ("Azucar Glass", 1000),
         ]
         #Tupla de Ingredientes de bultos
         ingredientes_de_bultos = [
@@ -660,10 +712,93 @@ def editar_inventario():
 
                         gramos_ajustados = float(cantidad) * float(campoKilosBulto) - (float(cantidad) * float(campoKilosBulto) * float(porcentaje_cascara) / 100)
                         porcentaje = float((kilos_ajustados/float(valor_unidad*50))*100)
-                        flash("porcentaje: " + str(porcentaje))
                         flash("Kilos ajustados" , kilos_ajustados)
+                        if nombreMateria in ingredientes_liquidos:
+                            idMedida = 3
+                        elif nombreMateria == "Huevo":
+                            idMedida = 1
+                        else:
+                            idMedida = 2
+
+                        materia_prima_existente = MateriaPrima.query.get(id_materiaPrima)
+
+                        if materia_prima_existente:
+                            materia_prima_existente.nombreMateria = nombreMateria
+                            materia_prima_existente.precioCompra = precio
+                            materia_prima_existente.cantidad = cantidad
+                            materia_prima_existente.idMedida = idMedida
+                            materia_prima_existente.idProveedor = proveedor_id
+
+                            try:
+                                db.session.commit()
+                                flash("Materia prima actualizada correctamente.")
+                            except Exception as e:
+                                db.session.rollback()
+                                flash("Error al actualizar la materia prima en la base de datos: " + str(e))
+                        else:
+                            flash("La materia prima con el ID proporcionado no existe en la base de datos.")
+
+                        detalle_existente = Detalle_materia_prima.query.filter_by(idMateriaPrima=id_materiaPrima).first()
+
+                        if detalle_existente:
+
+                            detalle_existente.fechaCompra = fechaCom
+                            detalle_existente.fechaVencimiento = fechaVen
+                            detalle_existente.cantidadExistentes = gramos_ajustados
+                            detalle_existente.porcentaje = porcentaje
+
+                            try:
+                                db.session.commit()
+                                flash("Detalle de materia prima actualizado correctamente.")
+                            except Exception as e:
+                                db.session.rollback()
+                                flash("Error al actualizar el detalle de materia prima en la base de datos: " + str(e))
+                        else:
+                            flash("El detalle de materia prima correspondiente al ID proporcionado no existe en la base de datos.")
                     else:
-                        kilos_ajustados = float(cantidad) * float(campoKilosBulto)
+                        kilos_ajustados = valor_unidad * (float(cantidad) * float(campoKilosBulto))
+                        if nombreMateria in ingredientes_liquidos:
+                            idMedida = 3
+                        elif nombreMateria == "Huevo":
+                            idMedida = 1
+                        else:
+                            idMedida = 2
+
+                        materia_prima_existente = MateriaPrima.query.get(id_materiaPrima)
+
+                        if materia_prima_existente:
+                            materia_prima_existente.nombreMateria = nombreMateria
+                            materia_prima_existente.precioCompra = precio
+                            materia_prima_existente.cantidad = cantidad
+                            materia_prima_existente.idMedida = idMedida
+                            materia_prima_existente.idProveedor = proveedor_id
+
+                            try:
+                                db.session.commit()
+                                flash("Materia prima actualizada correctamente.")
+                            except Exception as e:
+                                db.session.rollback()
+                                flash("Error al actualizar la materia prima en la base de datos: " + str(e))
+                        else:
+                            flash("La materia prima con el ID proporcionado no existe en la base de datos.")
+
+                        detalle_existente = Detalle_materia_prima.query.filter_by(idMateriaPrima=id_materiaPrima).first()
+
+                        if detalle_existente:
+
+                            detalle_existente.fechaCompra = fechaCom
+                            detalle_existente.fechaVencimiento = fechaVen
+                            detalle_existente.cantidadExistentes = gramos_ajustados
+                            detalle_existente.porcentaje = porcentaje
+
+                            try:
+                                db.session.commit()
+                                flash("Detalle de materia prima actualizado correctamente.")
+                            except Exception as e:
+                                db.session.rollback()
+                                flash("Error al actualizar el detalle de materia prima en la base de datos: " + str(e))
+                        else:
+                            flash("El detalle de materia prima correspondiente al ID proporcionado no existe en la base de datos.")
                         flash("Kilos ajustados" , kilos_ajustados)
                 else:
                     flash("Este ingrediente no puede ser encontrado.")
@@ -679,8 +814,92 @@ def editar_inventario():
                         datos_de_porcentaje = (datos_sin_porcentaje * float(porcentaje_cascara) / 100)
                         gramos_ajustados =datos_sin_porcentaje - datos_de_porcentaje
                         porcentaje = float((gramos_ajustados/float(valor_unidad*50))*100)
+                        if nombreMateria in ingredientes_liquidos:
+                            idMedida = 3
+                        elif nombreMateria == "Huevo":
+                            idMedida = 1
+                        else:
+                            idMedida = 2
+
+                        materia_prima_existente = MateriaPrima.query.get(id_materiaPrima)
+
+                        if materia_prima_existente:
+                            materia_prima_existente.nombreMateria = nombreMateria
+                            materia_prima_existente.precioCompra = precio
+                            materia_prima_existente.cantidad = cantidad
+                            materia_prima_existente.idMedida = idMedida
+                            materia_prima_existente.idProveedor = proveedor_id
+
+                            try:
+                                db.session.commit()
+                                flash("Materia prima actualizada correctamente.")
+                            except Exception as e:
+                                db.session.rollback()
+                                flash("Error al actualizar la materia prima en la base de datos: " + str(e))
+                        else:
+                            flash("La materia prima con el ID proporcionado no existe en la base de datos.")
+
+                        detalle_existente = Detalle_materia_prima.query.filter_by(idMateriaPrima=id_materiaPrima).first()
+
+                        if detalle_existente:
+
+                            detalle_existente.fechaCompra = fechaCom
+                            detalle_existente.fechaVencimiento = fechaVen
+                            detalle_existente.cantidadExistentes = gramos_ajustados
+                            detalle_existente.porcentaje = porcentaje
+
+                            try:
+                                db.session.commit()
+                                flash("Detalle de materia prima actualizado correctamente.")
+                            except Exception as e:
+                                db.session.rollback()
+                                flash("Error al actualizar el detalle de materia prima en la base de datos: " + str(e))
+                        else:
+                            flash("El detalle de materia prima correspondiente al ID proporcionado no existe en la base de datos.")
                     else:
-                        gramos_ajustados = float(cantidad) * float(valor_unidad)
+                        gramos_ajustados = valor_unidad * (float(cantidad) * float(valor_unidad))
+                        if nombreMateria in ingredientes_liquidos:
+                            idMedida = 3
+                        elif nombreMateria == "Huevo":
+                            idMedida = 1
+                        else:
+                            idMedida = 2
+
+                        materia_prima_existente = MateriaPrima.query.get(id_materiaPrima)
+
+                        if materia_prima_existente:
+                            materia_prima_existente.nombreMateria = nombreMateria
+                            materia_prima_existente.precioCompra = precio
+                            materia_prima_existente.cantidad = cantidad
+                            materia_prima_existente.idMedida = idMedida
+                            materia_prima_existente.idProveedor = proveedor_id
+
+                            try:
+                                db.session.commit()
+                                flash("Materia prima actualizada correctamente.")
+                            except Exception as e:
+                                db.session.rollback()
+                                flash("Error al actualizar la materia prima en la base de datos: " + str(e))
+                        else:
+                            flash("La materia prima con el ID proporcionado no existe en la base de datos.")
+
+                        detalle_existente = Detalle_materia_prima.query.filter_by(idMateriaPrima=id_materiaPrima).first()
+
+                        if detalle_existente:
+
+                            detalle_existente.fechaCompra = fechaCom
+                            detalle_existente.fechaVencimiento = fechaVen
+                            detalle_existente.cantidadExistentes = gramos_ajustados
+                            detalle_existente.porcentaje = porcentaje
+
+                            try:
+                                db.session.commit()
+                                flash("Detalle de materia prima actualizado correctamente.")
+                            except Exception as e:
+                                db.session.rollback()
+                                flash("Error al actualizar el detalle de materia prima en la base de datos: " + str(e))
+                        else:
+                            flash("El detalle de materia prima correspondiente al ID proporcionado no existe en la base de datos.")
                 else:
                     flash("Este ingrediente no puede ser encontrado.")
             else:
@@ -693,53 +912,98 @@ def editar_inventario():
                     porcentaje_cascara = [porcentaje for nombre, porcentaje in ingredientes_con_cascara_porcentaje if nombre == nombreMateria][0]
                     gramos_ajustados -= (float(cantidad) * float(valor_unidad) * float(porcentaje_cascara) / 100)
                     porcentaje = float((gramos_ajustados/float(valor_unidad*50))*100)
+                    if nombreMateria in ingredientes_liquidos:
+                        idMedida = 3
+                    elif nombreMateria == "Huevo":
+                        idMedida = 1
+                    else:
+                        idMedida = 2
+
+                    materia_prima_existente = MateriaPrima.query.get(id_materiaPrima)
+
+                    if materia_prima_existente:
+                        materia_prima_existente.nombreMateria = nombreMateria
+                        materia_prima_existente.precioCompra = precio
+                        materia_prima_existente.cantidad = cantidad
+                        materia_prima_existente.idMedida = idMedida
+                        materia_prima_existente.idProveedor = proveedor_id
+
+                        try:
+                            db.session.commit()
+                            flash("Materia prima actualizada correctamente.")
+                        except Exception as e:
+                            db.session.rollback()
+                            flash("Error al actualizar la materia prima en la base de datos: " + str(e))
+                    else:
+                        flash("La materia prima con el ID proporcionado no existe en la base de datos.")
+
+                    detalle_existente = Detalle_materia_prima.query.filter_by(idMateriaPrima=id_materiaPrima).first()
+
+                    if detalle_existente:
+
+                        detalle_existente.fechaCompra = fechaCom
+                        detalle_existente.fechaVencimiento = fechaVen
+                        detalle_existente.cantidadExistentes = gramos_ajustados
+                        detalle_existente.porcentaje = porcentaje
+
+                        try:
+                            db.session.commit()
+                            flash("Detalle de materia prima actualizado correctamente.")
+                        except Exception as e:
+                            db.session.rollback()
+                            flash("Error al actualizar el detalle de materia prima en la base de datos: " + str(e))
+                    else:
+                        flash("El detalle de materia prima correspondiente al ID proporcionado no existe en la base de datos.")
+                else:
+                    gramos_ajustados = valor_unidad * (float(cantidad) * float(valor_unidad))
+                    if nombreMateria in ingredientes_liquidos:
+                        idMedida = 3
+                    elif nombreMateria == "Huevo":
+                        idMedida = 1
+                    else:
+                        idMedida = 2
+
+                    materia_prima_existente = MateriaPrima.query.get(id_materiaPrima)
+
+                    if materia_prima_existente:
+                        materia_prima_existente.nombreMateria = nombreMateria
+                        materia_prima_existente.precioCompra = precio
+                        materia_prima_existente.cantidad = cantidad
+                        materia_prima_existente.idMedida = idMedida
+                        materia_prima_existente.idProveedor = proveedor_id
+
+                        try:
+                            db.session.commit()
+                            flash("Materia prima actualizada correctamente.")
+                        except Exception as e:
+                            db.session.rollback()
+                            flash("Error al actualizar la materia prima en la base de datos: " + str(e))
+                    else:
+                        flash("La materia prima con el ID proporcionado no existe en la base de datos.")
+
+                    detalle_existente = Detalle_materia_prima.query.filter_by(idMateriaPrima=id_materiaPrima).first()
+
+                    if detalle_existente:
+
+                        detalle_existente.fechaCompra = fechaCom
+                        detalle_existente.fechaVencimiento = fechaVen
+                        detalle_existente.cantidadExistentes = gramos_ajustados
+                        detalle_existente.porcentaje = porcentaje
+
+                        try:
+                            db.session.commit()
+                            flash("Detalle de materia prima actualizado correctamente.")
+                        except Exception as e:
+                            db.session.rollback()
+                            flash("Error al actualizar el detalle de materia prima en la base de datos: " + str(e))
+                    else:
+                        flash("El detalle de materia prima correspondiente al ID proporcionado no existe en la base de datos.")
             else:
                 flash("Este ingrediente no puede ser comprado por unidad.")
         else:
             flash("Tipo de compra no válido.")
 
-        if nombreMateria in ingredientes_liquidos:
-            idMedida = 3
-        elif nombreMateria == "Huevo":
-            idMedida = 1
-        else:
-            idMedida = 2
-
-        materia_prima_existente = MateriaPrima.query.get(id_materiaPrima)
-
-        if materia_prima_existente:
-            materia_prima_existente.nombreMateria = nombreMateria
-            materia_prima_existente.precioCompra = precio
-            materia_prima_existente.cantidad = cantidad
-            materia_prima_existente.idMedida = idMedida
-            materia_prima_existente.idProveedor = proveedor_id
-
-            try:
-                db.session.commit()
-                flash("Materia prima actualizada correctamente.")
-            except Exception as e:
-                db.session.rollback()
-                flash("Error al actualizar la materia prima en la base de datos: " + str(e))
-        else:
-            flash("La materia prima con el ID proporcionado no existe en la base de datos.")
-
-        detalle_existente = Detalle_materia_prima.query.filter_by(idMateriaPrima=id_materiaPrima).first()
-
-        if detalle_existente:
-
-            detalle_existente.fechaCompra = fechaCom
-            detalle_existente.fechaVencimiento = fechaVen
-            detalle_existente.cantidadExistentes = gramos_ajustados
-            detalle_existente.porcentaje = porcentaje
-
-            try:
-                db.session.commit()
-                flash("Detalle de materia prima actualizado correctamente.")
-            except Exception as e:
-                db.session.rollback()
-                flash("Error al actualizar el detalle de materia prima en la base de datos: " + str(e))
-        else:
-            flash("El detalle de materia prima correspondiente al ID proporcionado no existe en la base de datos.")
+        
     return redirect(url_for('inventario'))
 
 @app.route("/eliminar_inventario", methods=['POST'])

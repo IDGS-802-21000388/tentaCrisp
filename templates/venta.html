@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+<div class="container">
+    <h1 class="text-center mb-5">
+        Pedido
+    </h1>
+    <div class="row" id="contenedorGalletas">
+
+        <!-- Aquí se generarán dinámicamente las imágenes y textos de cantidad -->
+    </div>
+
+    <div class="table-container">
+        <table id="tblProductos" class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th id="tblCabecera">Nombre del producto</th>
+                    <th id="tblCabecera">Piezas</th>
+                    <th id="tblCabecera">Caja 1k o 1/2k</th>
+                    <th id="tblCabecera">Gramos</th>
+                    <th id="tblCabecera">Dinero</th>
+                    <th id="tblCabecera">Precio de venta por pieza</th>
+                    <th id="tblCabecera">Total</th>
+                    <th id="tblBtn"></th>
+                </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+        </table> 
+        <div class="total-container">
+            <label for="totalInput">Total:</label>
+            <input type="text" id="totalInput" readonly>
+        </div>
+        <div class="button-container btnEnd">
+
+            <button class="btn btn-success" id="btnComprar" onclick="moduloPuntoDeVenta.guardarVenta();"  >Confirmar Pedido</button>
+        </div>
+    </div>
+
+
+</div>
+
+{% endblock %}
