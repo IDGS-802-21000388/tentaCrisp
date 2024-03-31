@@ -3,11 +3,8 @@
 
 {% block content %}
 <h1>Usuarios</h1>
-
     
-        <div id="bodyTabla">
-            <div id="#containerUsuarios" style="width: -moz-available;">
-                <div class="table-container">
+        <div id="bodyTablaUsuario">
                     <table id="tblUsuario" class="table table-hover table-sm">
                         <thead>
                             <tr>
@@ -29,10 +26,10 @@
                         <td>{{ usuario.rol }}</td>
                         <td>{{ usuario.estatus }}</td>
                         <td>
-                            <form action="{{ url_for('cambiar_estado_usuario', id_usuario=usuario.idUsuario) }}" method="POST">
+                            <form id="eliminarUsuarioForm" action="{{ url_for('cambiar_estado_usuario', id_usuario=usuario.idUsuario) }}" method="POST">
                                 {{ form.csrf_token }}
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                <button type="submit" class="btnEliminar" onclick="return confirm('¿Estás seguro de que deseas eliminar este usuario?')">
+                                <button type="button" class="btnEliminar">
                                     <i class="fa-solid fa-trash" style="color: #c12525;"></i>
                                 </button>
                             </form>
@@ -44,7 +41,7 @@
                     {% endfor %}
                         </tbody>
                     </table>        
-                </div>
+                
         
                 <div class="modal fade" id="modalUsuario" tabindex="-1" aria-labelledby="modalUsuarioLabel" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
@@ -149,7 +146,7 @@
                     <button class="btn btn-success" id="agregarUsuario" data-bs-toggle="modal" data-bs-target="#modalUsuario">Agregar Usuario</button>
         
                 </div>
-            </div>
         </div>
+        <script src="../static/js/usuario.js"></script>
     
 {% endblock %}

@@ -14,6 +14,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import Session
 ssl._create_default_https_context = ssl._create_unverified_context
 from collections import defaultdict
+from matplotlib import pyplot as plt
+import os
+from flask import render_template, send_from_directory
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
+
 
 
 app = Flask(__name__)
@@ -1474,6 +1481,62 @@ def cambiar_estado_usuario(id_usuario):
         flash('Usuario no encontrado', 'error')
 
     return redirect(url_for('usuarios'))
+
+@app.route('/compras')
+def mostrar_compras():
+    compras = Detalle_materia_prima.query.all()  # Obtener todas las compras de materia prima
+    
+    # Obtener instancias de MateriaPrima correspondientes a cada compra
+    for compra in compras:
+        compra.materia_prima = MateriaPrima.query.get(compra.idMateriaPrima)
+    
+    # Obtener mermas de cada materia prima
+    mermas = mermaInventario.query.all()
+    mermas_dict = {}
+    for merma in mermas:
+        if merma.idMateriaPrima not in mermas_dict:
+            mermas_dict[merma.idMateriaPrima] = merma.cantidadMerma
+        else:
+            mermas_dict[merma.idMateriaPrima] += merma.cantidadMerma
+
+    # Generar la gráfica
+    nombres_materia = [compra.materia_prima.nombreMateria for compra in compras]
+    cantidades_compradas = [compra.cantidadExistentes for compra in compras]
+    cantidades_merma = [mermas_dict.get(compra.materia_prima.idMateriaPrima, 0) for compra in compras]
+
+    try:
+        # Código que puede generar excepciones
+        plt.bar(nombres_materia, cantidades_compradas, label='Compras')
+        plt.bar(nombres_materia, cantidades_merma, color='red', label='Merma')
+        plt.xlabel('Materia Prima')
+        plt.ylabel('Cantidad')
+        plt.title('Compras y Merma de Materia Prima')
+        plt.xticks(rotation=45, ha='right')
+        plt.legend()
+
+        # Guardar la gráfica como un archivo de imagen
+        img_path = os.path.join(app.root_path, 'static', 'img', 'compras.png')
+        plt.savefig(img_path)
+
+        # Cerrar la figura de Matplotlib para liberar memoria
+        plt.close()
+
+        # Obtener la ubicación de la imagen para pasarla a la plantilla HTML
+        img_url = url_for('static', filename='img/compras.png')
+
+    except Exception as e:
+        # Manejo de la excepción: puedes registrar el error, imprimir un mensaje de error, etc.
+        print("Error al generar la gráfica:", e)
+        img_url = None  # O proporciona una URL de imagen predeterminada
+
+    # Pasar los detalles de las compras y la URL de la imagen a la plantilla HTML
+    return render_template('compras.html', compras=compras, img_url=img_url)
+
+
+# Ruta para servir la imagen generada
+@app.route('/img/<path:filename>')
+def custom_static(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
 if __name__ == '__main__':

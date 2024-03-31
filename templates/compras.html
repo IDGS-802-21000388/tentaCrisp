@@ -1,0 +1,38 @@
+    {% extends "layout.html" %}
+    {% from "_macros.html" import render_field %}
+
+    {% block content %}
+    <h1>Compras</h1>
+        
+    <div id="bodyTablaCompras">
+        <table id="tblCompras" class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th id="tblCabecera">Nombre</th>
+                    <th id="tblCabecera">Fecha Compra</th>
+                    <th id="tblCabecera">Fecha Vencimiento</th>
+                    <th id="tblCabecera">Proveedor</th>
+                    <th id="tblCabecera">Cantidad</th>
+                    <th id="tblCabecera">Precio</th>
+                    <th id="tblCabecera">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for compra in compras %}
+                    <tr>
+                        <td>{{ compra.materia_prima.nombreMateria }}</td>
+                        <td>{{ compra.fechaCompra }}</td>
+                        <td>{{ compra.fechaVencimiento }}</td>
+                        <td>{{ compra.materia_prima.proveedor.nombreProveedor }}</td>
+                        <td>{{ compra.cantidadExistentes }}</td>
+                        <td>{{ compra.materia_prima.precioCompra }}</td>
+                        <td>{{ compra.cantidadExistentes * compra.materia_prima.precioCompra }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <img src="{{ img_url }}" alt="Gráfica de Compras">
+    <script src="../static/js/compras.js"></script>
+
+    {% endblock %}
