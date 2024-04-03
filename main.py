@@ -2,7 +2,7 @@ from flask import Flask, request, render_template, flash, g, redirect, url_for, 
 from flask_wtf.csrf import CSRFProtect
 from config import DevelopmentConfig
 import forms, ssl, base64, json, re
-from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, Detalle_materia_prima, Medida, mermaInventario ,LogsUser
+from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, Detalle_materia_prima, Medida, mermaInventario ,LogsUser, Merma
 import forms, ssl, base64, json, re, html2text
 from sqlalchemy import func , and_
 from functools import wraps
@@ -683,7 +683,7 @@ def editar_inventario():
             ("Cerezas", 580),  # 580 gramos de cerezas
             ("Leche", 1000),  # 1 litro de leche
             ("Mermelada de fresa", 980),  # 980 gramos de mermelada de fresa
-            ("Harina", 1000)
+            ("Harina", 1000),
             ("Azucar Glass", 1000),
         ]
         #Tupla de Ingredientes de bultos
@@ -1265,8 +1265,7 @@ def producir():
         cantidadMerma = int(request.form.get('cantidadMerma')) if request.form.get('cantidadMerma') else 0
         idProducto = int(request.form.get('productoSeleccionado')) if request.form.get('productoSeleccionado') else 0
         fechaVencimiento = request.form.get('fechaVencimiento') if request.form.get('fechaVencimiento') else 0
-        print('fechaVencimiento')
-        print(fechaVencimiento)
+
         if idProducto == 0 or fechaVencimiento == 0:
             flash('Por favor, completa todos los campos correctamente', 'error')
             return redirect(url_for('productos'))
@@ -1276,6 +1275,14 @@ def producir():
             idProducto=idProducto
         )
         db.session.add(detalle_producto)
+        db.session.commit()
+
+        merma = Merma(
+            cantidadMerma=cantidadMerma,
+            idProducto=idProducto,
+            idDetalle_producto=detalle_producto.idDetalle_producto
+        )        
+        db.session.add(merma)
         db.session.commit()
 
         receta = Receta.query.filter_by(idProducto=idProducto).first()

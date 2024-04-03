@@ -140,13 +140,12 @@
 
             </div>
             <div class="menuPrueba">
-                <p class="title">Account</p>
                 <ul>
                     <li>
                         <a href="{{ url_for('logout') }}" style="text-decoration: none; color: #333; ">
                             <input type="hidden" name="csrf_token" value="{{csrf_token()}}" />
                             <i class="icon ph-bold ph-sign-out"></i>
-                            <span class="text">Logout</span>
+                            <span class="text">Cerrar Sesión</span>
                         </a>
                     </li>
                 </ul>

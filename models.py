@@ -81,11 +81,11 @@ class Detalle_producto(db.Model):
 
     idProducto = db.Column(db.Integer, db.ForeignKey('producto.idProducto'))
 
-class merma(db.Model):
+class Merma(db.Model):
     idMerma = db.Column(db.Integer, primary_key=True, autoincrement=True)
     cantidadMerma= db.Column(db.Float, nullable=False, default=0.0)
     idProducto = db.Column(db.Integer, db.ForeignKey('producto.idProducto'))
-    idMateriaPrima = db.Column(db.Integer, db.ForeignKey('materia_prima.idMateriaPrima'))
+    idDetalle_producto = db.Column(db.Integer, db.ForeignKey('detalle_producto.idDetalle_producto'))
 
 class mermaInventario(db.Model):
     idMerma = db.Column(db.Integer, primary_key=True, autoincrement=True)
