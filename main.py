@@ -1,8 +1,8 @@
-from flask import Flask, request, render_template, flash, g, redirect, url_for, session, jsonify
+from flask import Flask, request, render_template, flash, g, redirect, url_for, session, jsonify, make_response
 from flask_wtf.csrf import CSRFProtect
 from config import DevelopmentConfig
 import forms, ssl, base64, json, re
-from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, Detalle_materia_prima, Medida, mermaInventario ,LogsUser, Merma
+from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, Detalle_materia_prima, Medida, mermaInventario ,LogsUser, Venta, DetalleVenta, Detalle_materia_prima, Detalle_producto, Proveedor, Merma
 import forms, ssl, base64, json, re, html2text
 from sqlalchemy import func , and_
 from functools import wraps
@@ -20,6 +20,11 @@ from flask import render_template, send_from_directory
 import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from flask import send_file
+from reportlab.platypus import Table, TableStyle
+from reportlab.lib import colors
 
 
 
@@ -1545,6 +1550,164 @@ def mostrar_compras():
 def custom_static(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+@app.route('/punto_de_venta')
+def punto_de_venta():
+    productos = Producto.query.all()
+    detalles_producto = Detalle_producto.query.filter_by(estatus=1).order_by(Detalle_producto.fechaVencimiento.desc()).all()
+    print(detalles_producto)
+    print(productos)
+    return render_template('venta.html', productos=productos, detalles_producto=detalles_producto)
+
+
+@app.route('/pv_galleta_ticket', methods=['POST'])
+@login_required
+def pv_galleta():
+    datos = request.form.get('datos2')
+    user = request.form.get('user')
+    empresa = 'TentaCrisp'
+    print(datos)
+    datosPy = json.loads(datos)
+    print(datosPy)
+    cantidad = 0
+
+    total = calcular_total(datosPy)
+    fecha = datetime.now()
+
+    nueva_venta = Venta(total=total, fechaVenta=fecha)
+    db.session.add(nueva_venta)
+    db.session.commit()
+    
+
+    for detalle in datosPy:
+        cantidad = detalle['piezas'] + detalle['caja700g'] + detalle['caja1kg'] + detalle['gramos']
+        id_producto = detalle['id']
+        nuevo_detalle = DetalleVenta(
+            cantidad=cantidad,
+            subtotal=detalle['subtotal'],
+            idProducto=detalle['id'],
+            idVenta=nueva_venta.idVenta,
+            idMedida=1
+        )
+        db.session.add(nuevo_detalle)
+        descontar_cantidad_producto(id_producto, cantidad)
+
+    db.session.commit()
+
+    return generar_pdf(datosPy,fecha,user,empresa)
+
+@app.route('/pv_galleta', methods=['POST'])
+@login_required
+def pv_galleta_Sin_Ticket():
+    datos = request.form.get('datos')
+    datosPy = json.loads(datos)
+    cantidad = 0
+
+    total = calcular_total(datosPy)
+    fecha = datetime.now()
+
+    nueva_venta = Venta(total=total, fechaVenta=fecha)
+    db.session.add(nueva_venta)
+    db.session.commit()
+    
+
+    for detalle in datosPy:
+        cantidad = detalle['piezas'] + detalle['caja700g'] + detalle['caja1kg'] + detalle['gramos']
+        id_producto = detalle['id']
+        nuevo_detalle = DetalleVenta(
+            cantidad=cantidad,
+            subtotal=detalle['subtotal'],
+            idProducto=detalle['id'],
+            idVenta=nueva_venta.idVenta,
+            idMedida=1
+        )
+        db.session.add(nuevo_detalle)
+        descontar_cantidad_producto(id_producto, cantidad)
+
+    db.session.commit()
+
+    return redirect(url_for('punto_de_venta'))
+
+
+def descontar_cantidad_producto(id_producto, cantidad):
+    print("id_producto: ", id_producto)
+    detalle_producto = Detalle_producto.query.filter_by(idProducto=id_producto).first()
+
+    if detalle_producto:
+        if detalle_producto.cantidadExistentes >= cantidad:
+            detalle_producto.cantidadExistentes -= cantidad
+            db.session.commit()
+        else:
+            flash("No hay suficiente producto en existencia", "error")
+    else:
+        flash("El producto no fue encontrado", "error")
+
+
+def calcular_total(datos):
+    total = 0
+    for detalle in datos:
+        total += detalle['subtotal']
+    return total
+
+def generar_pdf(datos, fecha_compra, comprador, empresa):
+    datosPy = datos
+    
+    pdf_filename = "venta.pdf"
+    c = canvas.Canvas(pdf_filename, pagesize=letter)
+
+    logo_path = "static/img/Galletas-removebg-preview (1).png"
+    c.drawImage(logo_path, 250, 220, width=100, height=100)
+    # Agregar título
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(100, 670, "!Vuelva pronto¡")
+
+    c.setFont("Helvetica", 12)
+    c.drawString(100, 650, f"Fecha de compra: {fecha_compra}")
+    c.drawString(100, 630, f"Lo atendio : {comprador}")
+    c.setFillColorRGB(0.1, 0.3, 0.5)
+    c.drawString(100, 610, empresa)
+
+    # Agregar los datos como tabla centrada
+    datos_tabla = [["Piezas", "Caja 700g", "Caja 1kg", "Gramos", "Subtotal"]]
+    for detalle in datosPy:
+        datos_tabla.append([
+            detalle['piezas'],
+            detalle['caja700g'],
+            detalle['caja1kg'],
+            detalle['gramos'],
+            detalle['subtotal']
+        ])
+    
+    tabla = Table(datos_tabla)
+    tabla.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+
+    width, height = letter
+    tabla.wrapOn(c, width-100, height)
+    tabla.drawOn(c, (width-tabla._width)/2, 400)
+
+    total = sum(detalle['subtotal'] for detalle in datosPy)
+    c.drawString(100, 100, f"Total: ${total}")
+
+    c.save()
+
+    response = make_response(send_file(pdf_filename, as_attachment=True))
+    response.headers['Content-Disposition'] = 'attachment; filename=venta.pdf'
+    return response
+
+@app.route('/logs')
+def logs():
+    logs = LogsUser.query.all()
+
+    return render_template('logs.html', logs=logs)
 
 if __name__ == '__main__':
     csrf.init_app(app)

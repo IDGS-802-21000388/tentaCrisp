@@ -2,14 +2,14 @@
 <html lang="en">
 
 <head>
-    <title>Don Galleto</title>
+    <title>TentaCrisp</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" type="text/css" href="../static/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="../static/css/style.css">
     <link rel="stylesheet" type="text/css" href="../static/css/mystyles.css">
     <link rel="stylesheet" type="text/css" href="../static/css/mystylesPrueba.css">
-    <link rel="icon" type="image/x-icon" href="../static/img/icono.png" />
+    <link rel="icon" type="image/x-icon" href="../static/img/Galletas-removebg-preview (1).png" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <link href="../static/css/bootstrap.min.css" rel="stylesheet">
@@ -36,13 +36,13 @@
                     <a href="/index"><img src="../static/img/Galletas-removebg-preview (1).png" alt=""></a>
                 </div>
                 <div class="user-details">
-                    <p class="title">Web developer</p>
-                    <p class="name">TentaCrip</p>
+                    <p class="title">{{current_user.rol}}</p>
+                    <p class="name">{{current_user.nombreUsuario}}</p>
                 </div>
             </div>
             <div class="nav">
                 <div class="menuPrueba">
-                    <p class="title">Main</p>
+                    <p class="title">Menu</p>
                     <ul>
                         <li class="active">
                             <a href="/index" style="text-decoration: none; color: #333; ">
@@ -72,7 +72,7 @@
                         </li>
                         <!--Lista de Ventas-->
                         <li class="active">
-                            <a href="#" style="text-decoration: none; color: #333; ">
+                            <a href="/punto_de_venta" style="text-decoration: none; color: #333; ">
                                 <i class="icon ph-bold ph-file-text"></i>
                                 <span class="text">Ventas</span>
                             </a>
@@ -80,7 +80,7 @@
                         <!--Lista de Produccion-->
                         <li>
                             <a href="#" style="text-decoration: none; color: #333;">
-                                <i class="icon ph-bold ph-user"></i>
+                                <i class="icon ph-bold ph-cookie"></i>
                                 <span class="text">Produccion</span>
                                 <i class="arrow ph-bold ph-caret-down"></i>
                             </a>
@@ -105,7 +105,7 @@
                         <!--Lista de Control de Gastos-->
                         <li>
                             <a href="#" style="text-decoration: none; color: #333;">
-                                <i class="icon ph-bold ph-user"></i>
+                                <i class="icon ph-bold ph-money"></i>
                                 <span class="text">Control de Gastos</span>
                                 <i class="arrow ph-bold ph-caret-down"></i>
                             </a>
@@ -129,8 +129,8 @@
                     <p class="title">Seguridad</p>
                     <ul>
                         <li class="active">
-                            <a href="#" style="text-decoration: none; color: #333; ">
-                                <i class="icon ph-bold ph-house-simple"></i>
+                            <a href="/logs" style="text-decoration: none; color: #333; ">
+                                <i class="icon ph-bold ph-notebook"></i>
                                 <span class="text">Registro de Logs</span>
                             </a>
                         </li>
@@ -140,6 +140,7 @@
 
             </div>
             <div class="menuPrueba">
+                <p class="title">Cuenta</p>
                 <ul>
                     <li>
                         <a href="{{ url_for('logout') }}" style="text-decoration: none; color: #333; ">
@@ -183,6 +184,8 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ url_for('static', filename='js/materiaPrima.js') }}"></script>
     <script src="{{ url_for('static', filename='js/proveedor.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/puntoVenta.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/logs.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
     <script>
         $(".menuPrueba > ul > li").click(function (e) {
