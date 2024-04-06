@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<table id="tblLogsUser" class="table table-hover table-sm">
+    <thead>
+        <tr>
+            <th>Procedimiento</th>
+            <th>Última Fecha</th>
+            <th>ID Usuario</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for log in logs %}
+        <tr>
+            <td>{{ log.procedimiento }}</td>
+            <td>{{ log.lastDate.strftime('%Y-%m-%d %H:%M:%S') if log.lastDate else '-' }}</td>
+            <td>{{ log.idUsuario }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
