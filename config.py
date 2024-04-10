@@ -4,7 +4,7 @@ class Config(object):
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://EdwinRivera:Yovani2002@127.0.0.1/don_galletoV2'
+    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://EdwinRivera:Yovani2002.@127.0.0.1/don_galletoV2'
     CORS_ORIGINS = ['http://localhost:']
     # RECAPTCHA_USE_SSL = False
     # RECAPTCHA_PUBLIC_KEY = "6Ld-ZZ0pAAAAAHAoFh6fPuhpGmck_IeSrK6SRcyR"
