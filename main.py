@@ -26,8 +26,6 @@ from flask import send_file
 from reportlab.platypus import Table, TableStyle
 from reportlab.lib import colors
 
-
-
 app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
 csrf = CSRFProtect()
@@ -60,49 +58,52 @@ def login():
     
     if request.method == 'POST' and usuario_form.validate():
         fecha_hora_actual = datetime.now()
-        bloqueado_hasta = session.get('bloqueado_hasta')
-        bloqueado_hasta = datetime.fromisoformat(bloqueado_hasta) if bloqueado_hasta else None
         fecha_hora_actual = fecha_hora_actual.replace(microsecond=0)
 
-        if bloqueado_hasta:
-            bloqueado_hasta = bloqueado_hasta.replace(microsecond=0)
+        nombreUsuario = str(html2text.html2text(usuario_form.nombreUsuario.data)).strip()
+        contrasenia = str(html2text.html2text(usuario_form.contrasenia.data)).strip()
+        user = Usuario.query.filter_by(nombreUsuario=nombreUsuario).first()
+        intentos = user.intentos
+        if user and check_password_hash(user.contrasenia, contrasenia) and int(intentos)<3: 
+            login_user(user)
+            log = LogsUser(
+                procedimiento='Inicio de sesión',
+                lastDate=fecha_hora_actual,
+                idUsuario=user.idUsuario
+            )
+            db.session.add(log)
+            db.session.commit()
 
-        if bloqueado_hasta and (fecha_hora_actual) < bloqueado_hasta:
-            return redirect(url_for('login'))
+            user.dateLastToken = fecha_hora_actual
+            db.session.commit()
+            return jsonify({'success': True, 'redirect': url_for('index')})
         else:
-            nombreUsuario = str(html2text.html2text(usuario_form.nombreUsuario.data)).strip()
-            contrasenia = str(html2text.html2text(usuario_form.contrasenia.data)).strip()
-            print("Nombre Usuario",nombreUsuario ,"Contraseña",contrasenia)
-            print("Contraseña",generate_password_hash(contrasenia))
-            user = Usuario.query.filter_by(nombreUsuario=nombreUsuario).first()
-            if user and check_password_hash(user.contrasenia, contrasenia): 
-                login_user(user)
-                log = LogsUser(
-                    procedimiento='Inicio de sesión',
-                    lastDate=fecha_hora_actual,
-                    idUsuario=user.idUsuario
-                )
-                db.session.add(log)
+            if int(intentos)>=3:
+                user.estatus = 0
+                return jsonify({'success': False, 'error': 'Tu cuenta ha sido bloqueda.'})
+
+            else:
+                intentos+=1
+                user.intentos = intentos
                 db.session.commit()
 
-                user.dateLastToken = fecha_hora_actual
-                db.session.commit()
-                session.pop('intentos_fallidos', None)
-                return jsonify({'success': True, 'redirect': url_for('index')})
-            else:
-                session['intentos_fallidos'] = session.get('intentos_fallidos', 0) + 1
-                if session['intentos_fallidos'] >= 3:
-                    session['bloqueado_hasta'] = (fecha_hora_actual + timedelta(minutes=1)).isoformat()
-                    flash('Tu cuenta ha sido bloqueada temporalmente debido a múltiples intentos fallidos. Inténtalo de nuevo más tarde.', 'error')
                 log = LogsUser(
                     procedimiento=f'Se intento Iniciar Sesión con las credenciales usuario:{nombreUsuario} y contraseña:{contrasenia} ',
                     lastDate=fecha_hora_actual,
                     idUsuario=0
                 )
+            
                 db.session.add(log)
                 db.session.commit()
+
+                log = LogsUser(
+                    procedimiento=f'Se intento Iniciar Sesión con las credenciales usuario:{nombreUsuario} y contraseña:{contrasenia} ',
+                    lastDate=fecha_hora_actual,
+                    idUsuario=0
+                )
+
                 return jsonify({'success': False, 'error': 'Usuario o contraseña inválidos'})
-        
+    
     return render_template('login.html', form=usuario_form)
 
 @app.route('/logout', methods=['GET', 'POST'])
@@ -1715,4 +1716,4 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         
-    app.run()
+    app.run(host='0.0.0.0')
