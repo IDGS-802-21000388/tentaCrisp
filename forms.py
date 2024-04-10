@@ -10,12 +10,12 @@ class LoginForm(FlaskForm):
     contrasenia = PasswordField('Contraseña', validators=[DataRequired(), Length(min=6, max=100)])
 
 class UsuarioForm(FlaskForm):
-    nombre = StringField('Nombre', validators=[DataRequired(), Length(min=4, max=100)])
-    nombreUsuario = StringField('Nombre de Usuario', validators=[DataRequired(), Length(min=4, max=100)])
-    contrasenia = PasswordField('Contraseña', validators=[DataRequired(), Length(min=6, max=100)])
+    nombre = StringField('Nombre', validators=[DataRequired(), Length(min=4, max=100,message='Valor no válido')])
+    nombreUsuario = StringField('Nombre de Usuario', validators=[DataRequired(), Length(min=4, max=100,message='Valor no válido')])
+    contrasenia = PasswordField('Contraseña', validators=[DataRequired(), Length(min=6, max=100,message='Valor no válido')])
     rol = SelectField('Rol', choices=[('Administrador', 'Administrador'), ('Gerente', 'Gerente'), ('Produccion', 'Produccion'), ('Venta', 'Venta')])
     telefono=StringField('Telefono',[
-        validators.length(min=1,max=11,message='valor no válido')
+        validators.length(min=1,max=11,message='Valor no válido')
     ])
 class InventarioForm(Form):
     nombre = StringField('Nombre',[validators.DataRequired(message='Favor de ingresar el nombre'),validators.length(min=1,max=40,message='Ingresa nombre valido')])
@@ -39,3 +39,15 @@ class NuevaGalletaForm(FlaskForm):
 
 class MermaForm(FlaskForm):
     cantidadKilos = DecimalField('Cantidad', validators=[DataRequired()])
+    
+class VentasForm(FlaskForm):
+    tipo_seleccion = SelectField('Seleccionar tipo de ventas', choices=[('dia', 'Día'), ('semana', 'Semana'), ('mes', 'Mes'), ('todos','Todos')])
+    fecha = DateField('Seleccionar fecha', validators=[DataRequired()], format='%Y-%m-%d')
+    
+class ComprasForm(FlaskForm):
+    tipo_seleccion = SelectField('Seleccionar tipo de compras', choices=[('dia', 'Día'), ('semana', 'Semana'), ('mes', 'Mes'), ('todos','Todos')])
+    fecha = DateField('Seleccionar fecha', validators=[DataRequired()], format='%Y-%m-%d')
+
+class GananciasForm(FlaskForm):
+    tipo_seleccion = SelectField('Seleccionar tipo de ganancias', choices=[('dia', 'Día'), ('semana', 'Semana'), ('mes', 'Mes'), ('todos','Todos')])
+    fecha = DateField('Seleccionar fecha', validators=[DataRequired()], format='%Y-%m-%d')

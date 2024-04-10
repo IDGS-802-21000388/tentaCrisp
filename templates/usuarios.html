@@ -51,7 +51,7 @@
                             </div>
                             <div class="modal-body">
                                 
-                                <form action="{{ url_for('usuarios') }}" method="POST" novalidate>
+                                <form class="needs-validation" action="{{ url_for('usuarios') }}" method="POST" >
                                     {{ form.csrf_token }}
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <div id="passwordWarning" class="alert alert-danger" >
@@ -101,7 +101,7 @@
                                 <h1 class="modal-title fs-5"><i class="fa-solid fa-cookie-bite fa-lg" style="color: #826455;"></i> Editar Usuario</h1>
                             </div>
                             <div class="modal-body">
-                                <form action="{{ url_for('editar_usuario') }}" method="POST" novalidate>
+                                <form class="needs-validation" action="{{ url_for('editar_usuario') }}" method="POST" >
                                     {{ form.csrf_token }}
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input  type="hidden" id="editIdUsuario" name="editIdUsuario">

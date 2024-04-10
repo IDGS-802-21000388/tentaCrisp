@@ -63,6 +63,7 @@
                             </th>
                             <th id="tblCabecera">Costo de producción por pieza</th>
                             <th id="tblCabecera">Precio de venta por pieza</th>
+                            <th id="tblCabecera">Utilidad</th>
                             <th id="tblBtn">Fecha de caducidad</th>
                             <th id="tblBtn"></th>
                         </tr>
@@ -73,7 +74,8 @@
                                 <td>{{ producto['nombreProducto'] }}</td>
                                 <td>{{ producto['cantidadExistentes'] }}</td>
                                 <td>{{ producto['precioProduccion'] }}</td>
-                                <td>{{ producto['precioVenta'] }}</td>            
+                                <td>{{ producto['precioVenta'] }}</td>
+                                <td>{{ producto['precioVenta']-producto['precioProduccion'] }}</td>            
                                 <td>{{ producto['fechaVencimiento'] }}</td>
                                 <td>
                                     <form method="POST" action="/del_act_logica_produccion" class="eliminarForm">

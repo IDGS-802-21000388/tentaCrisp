@@ -6,7 +6,7 @@ from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_produ
 import forms, ssl, base64, json, re, html2text
 from sqlalchemy import func , and_
 from functools import wraps
-from flask_cors import CORS
+from flask_cors import CORS , cross_origin
 from flask_wtf.recaptcha import Recaptcha
 from datetime import datetime ,timedelta, timezone
 from flask_login import current_user, LoginManager, login_user, logout_user, login_required, login_manager
@@ -20,18 +20,33 @@ from flask import render_template, send_from_directory
 import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
+import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
+import numpy as np
+from matplotlib.colors import ListedColormap
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from flask import send_file
+from flask import send_file , abort
 from reportlab.platypus import Table, TableStyle
 from reportlab.lib import colors
 
+
 app = Flask(__name__)
+@app.before_request
+def cors():
+    if request.remote_addr != '127.0.0.1' :
+        print ("HOLA ",request.remote_addr)
+        abort(403)
+    
+
 app.config.from_object(DevelopmentConfig)
 csrf = CSRFProtect()
-CORS(app, resources={r"/*": {"origins": app.config['CORS_ORIGINS']}})
+cors = CORS(app, resources={r"*": {"origins": "http://192.168.137.1:5000"}})
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+ssl._create_default_https_context = ssl._create_unverified_context
 #login_manager.login_view = 'login'
 # recaptcha = Recaptcha(app)
 
@@ -53,6 +68,7 @@ def prueba():
     return render_template("layout2.html")
 
 @app.route('/', methods=['GET', 'POST'])
+@cross_origin()
 def login():
     usuario_form = forms.LoginForm(request.form)
     
@@ -123,6 +139,7 @@ def index():
 
 # Ruta para agregar una nuevo Proveedor
 @app.route("/proveedor", methods=['GET', 'POST'])
+@login_required
 def proveedor():
     nombreProveedor = ""
     direccion = ""
@@ -157,6 +174,7 @@ def proveedor():
 
 # Ruta para eliminar un Proveedor
 @app.route("/eliminar_proveedor", methods=['POST'])
+@login_required
 def eliminar_proveedor():
     id_proveedor = int(request.form.get("id"))
     proveedor = Proveedor.query.get(id_proveedor)
@@ -172,6 +190,7 @@ def eliminar_proveedor():
 
 # Ruta para editar un Proveedor
 @app.route('/editar_proveedor', methods=['POST'])
+@login_required
 def editar_proveedor():
     provedor = forms.ProveedorForm(request.form)
     id_proveedor = request.form.get('editIdProveedor')
@@ -203,6 +222,7 @@ def editar_proveedor():
 
 # Inicio del Modulo de Materia Prima
 @app.route("/inventario", methods=['GET', 'POST'])
+@login_required
 def inventario():
     nombreMateria = ""
     precio = ""
@@ -632,6 +652,7 @@ def procesar_datos(materias_primas, detalles_primas):
     return datos_procesados
 
 @app.route('/editar_inventario', methods=['POST'])
+@login_required
 def editar_inventario():
     nombreMateria = ""
     precio = ""
@@ -1020,6 +1041,7 @@ def editar_inventario():
     return redirect(url_for('inventario'))
 
 @app.route("/eliminar_inventario", methods=['POST'])
+@login_required
 def eliminar_inventario():
     id_detalle_prima = int(request.form.get("idDetallePrima"))
     detalle_prima = Detalle_materia_prima.query.get(id_detalle_prima)
@@ -1036,6 +1058,7 @@ def eliminar_inventario():
     return redirect(url_for('proveedor'))
 
 @app.route("/registrar_merma", methods=['POST'])
+@login_required
 def registrar_merma():
     id_detalle_prima = ""
     cantidad_merma = 0
@@ -1399,9 +1422,11 @@ def productos():
 def getAllIngredientes():
     ingredientes = MateriaPrima.query.all()
     return ingredientes
+
 password_pattern = re.compile(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$')
 
 @app.route('/usuarios', methods=['GET', 'POST'])
+@login_required
 def usuarios():
     usuario_form = forms.UsuarioForm(request.form)
     if request.method == 'POST' and usuario_form.validate():
@@ -1442,6 +1467,7 @@ def usuarios():
 
 
 @app.route('/editar_usuario', methods=['POST'])
+@login_required
 def editar_usuario():
     usuario_form = forms.UsuarioForm(request.form)
     id_usuario = request.form.get('editIdUsuario')
@@ -1453,9 +1479,10 @@ def editar_usuario():
         contrasenia = usuario_form.contrasenia.data
         rol = usuario_form.rol.data
         telefono = usuario_form.telefono.data
-
-        # Verificar si la contraseña ha sido modificada y cumple con las políticas de seguridad
-        if contrasenia and not check_password_hash(usuario.contrasenia, contrasenia):
+    
+        if contrasenia != usuario.contrasenia:
+            usuario.contrasenia = generate_password_hash(contrasenia)
+        
             if not password_pattern.match(contrasenia):
                 flash('La contraseña debe contener al menos una mayúscula, una minúscula, un número y un carácter especial.', 'error')
                 return redirect(url_for('usuarios'))
@@ -1463,9 +1490,7 @@ def editar_usuario():
             if contrasenia in lista_contraseñas_no_seguras:
                 flash('La contraseña no puede ser una contraseña por defecto o previamente utilizada.', 'error')
                 return redirect(url_for('usuarios'))
-            
-            usuario.contrasenia = generate_password_hash(contrasenia)
-            
+               
         usuario.rol = rol
         usuario.telefono = telefono
 
@@ -1484,6 +1509,7 @@ lista_contraseñas_no_seguras = [
 ]
     
 @app.route('/cambiar_estado_usuario/<int:id_usuario>', methods=['POST','GET'])
+@login_required
 def cambiar_estado_usuario(id_usuario):
     usuario = Usuario.query.get(id_usuario)
     if usuario:
@@ -1496,14 +1522,33 @@ def cambiar_estado_usuario(id_usuario):
     return redirect(url_for('usuarios'))
 
 @app.route('/compras')
+@login_required
 def mostrar_compras():
-    compras = Detalle_materia_prima.query.all()  # Obtener todas las compras de materia prima
-    
+    form = forms.ComprasForm()  # Crear una instancia del formulario de compras
+
+    if request.method == 'POST' and form.validate():
+        tipo_busqueda = form.tipo_seleccion.data
+        fecha_seleccionada = form.fecha.data
+        compras, img_url = obtener_compras_y_grafica(tipo_busqueda, fecha_seleccionada)
+        return render_template('compras.html', form=form, compras=compras, img_url=img_url)
+
+    # Si la solicitud es GET o el formulario no es válido, mostrar todas las compras
+    compras, img_url = obtener_compras_y_grafica()
+    return render_template('compras.html', form=form, compras=compras, img_url=img_url)
+
+
+def obtener_compras_y_grafica(tipo_busqueda=None, fecha_seleccionada=None):
+    # Obtener el rango de fechas según el tipo de búsqueda
+    fecha_inicio, fecha_fin = calcular_rango_fechas(tipo_busqueda, fecha_seleccionada)
+
+    # Filtrar las compras por el rango de fechas
+    compras = Detalle_materia_prima.query.filter(Detalle_materia_prima.fechaCompra.between(fecha_inicio, fecha_fin)).all()
+
     # Obtener instancias de MateriaPrima correspondientes a cada compra
     for compra in compras:
         compra.materia_prima = MateriaPrima.query.get(compra.idMateriaPrima)
     
-    # Obtener mermas de cada materia prima
+    # Obtener mermas de cada materia prima dentro del rango de fechas
     mermas = mermaInventario.query.all()
     mermas_dict = {}
     for merma in mermas:
@@ -1512,46 +1557,333 @@ def mostrar_compras():
         else:
             mermas_dict[merma.idMateriaPrima] += merma.cantidadMerma
 
-    # Generar la gráfica
-    nombres_materia = [compra.materia_prima.nombreMateria for compra in compras]
-    cantidades_compradas = [compra.cantidadExistentes for compra in compras]
-    cantidades_merma = [mermas_dict.get(compra.materia_prima.idMateriaPrima, 0) for compra in compras]
+    # Crear un DataFrame de Pandas con los datos de compras y mermas
+    data = []
+    for compra in compras:
+        nombre = compra.materia_prima.nombreMateria
+        cantidad_comprada = compra.cantidadExistentes
+        cantidad_merma = mermas_dict.get(compra.materia_prima.idMateriaPrima, 0)
+        data.append([nombre, cantidad_comprada, cantidad_merma])
+    
+    df = pd.DataFrame(data, columns=['Nombre', 'Compras', 'Merma'])
+    
+    # Consolidar las compras y mermas para cada materia prima
+    df = df.groupby('Nombre').sum().reset_index()
 
-    try:
-        # Código que puede generar excepciones
-        plt.bar(nombres_materia, cantidades_compradas, label='Compras')
-        plt.bar(nombres_materia, cantidades_merma, color='red', label='Merma')
-        plt.xlabel('Materia Prima')
-        plt.ylabel('Cantidad')
-        plt.title('Compras y Merma de Materia Prima')
+    # Generar la gráfica utilizando Pandas
+    plt = df.plot(x='Nombre', kind='bar', stacked=True, figsize=(10, 6))
+    plt.set_xlabel('Materia Prima')
+    plt.set_ylabel('Cantidad')
+    plt.set_title('Compras y Merma de Materia Prima')
+    plt.legend()
+
+    # Obtener el objeto de figura (Figure)
+    fig = plt.get_figure()
+
+    # Guardar la gráfica como un archivo de imagen
+    img_path = os.path.join(app.root_path, 'static', 'img', 'compras.png')
+    fig.savefig(img_path)
+
+    # Obtener la ubicación de la imagen para pasarla a la plantilla HTML
+    img_url = url_for('static', filename='img/compras.png')
+    
+    return compras, img_url
+
+def calcular_rango_fechas(tipo_busqueda=None, fecha_seleccionada=None):
+    if tipo_busqueda == 'dia':
+        # Si se selecciona la búsqueda por día, el rango de fechas será la fecha seleccionada
+        fecha_inicio = fecha_seleccionada
+        fecha_fin = fecha_seleccionada + timedelta(days=1)
+    elif tipo_busqueda == 'semana':
+        # Si se selecciona la búsqueda por semana, se calcula la semana a la que pertenece la fecha seleccionada
+        fecha_inicio_semana = fecha_seleccionada - timedelta(days=fecha_seleccionada.weekday())
+        fecha_fin_semana = fecha_inicio_semana + timedelta(days=7)
+        fecha_inicio = fecha_inicio_semana
+        fecha_fin = fecha_fin_semana
+    elif tipo_busqueda == 'mes':
+        # Si se selecciona la búsqueda por mes, se calcula el primer y último día del mes de la fecha seleccionada
+        primer_dia_mes = fecha_seleccionada.replace(day=1)
+        ultimo_dia_mes = primer_dia_mes.replace(day=1, month=primer_dia_mes.month % 12 + 1) - timedelta(days=1)
+        fecha_inicio = primer_dia_mes
+        fecha_fin = ultimo_dia_mes
+    else:
+        # Si se selecciona la búsqueda por todos, no se aplica ningún filtro de fecha
+        fecha_inicio = datetime.min
+        fecha_fin = datetime.max
+    
+    return fecha_inicio, fecha_fin
+
+def calcular_total_compras():
+    # Obtener todas las compras de materia prima
+    compras = Detalle_materia_prima.query.all()
+
+    # Inicializar el total de compras
+    total_compras = 0.0
+
+    # Calcular el total de compras sumando el producto del precio de compra y la cantidad de cada compra
+    for compra in compras:
+        materia_prima = MateriaPrima.query.get(compra.idMateriaPrima)
+        if materia_prima:
+            total_compras += materia_prima.precioCompra * compra.cantidadExistentes
+
+    return total_compras
+
+
+
+@app.route('/ventas', methods=['GET', 'POST'])
+@login_required
+def ventas():
+    form = forms.VentasForm()  # Crear una instancia del formulario de ventas
+
+    if request.method == 'POST' and form.validate():
+        tipo_seleccion = form.tipo_seleccion.data
+        fecha_seleccionada = form.fecha.data
+
+        total_ventas, ventas_detalle, df_ventas_agrupado = calcular_total_tipoventas(tipo_seleccion, fecha_seleccionada)
+
+        if total_ventas is None:
+            flash("No hay ventas para la fecha seleccionada.", "warning")
+            return render_template('dashboard_ventas.html', form=form)
+
+        return render_template('dashboard_ventas.html', form=form, ventas=total_ventas, ventas_detalle=ventas_detalle, df_ventas_agrupado=df_ventas_agrupado)
+
+    # Si la solicitud es GET, mostrar todas las ventas
+    total_ventas, ventas_detalle, df_ventas_agrupado = calcular_total_tipoventas()
+    return render_template('dashboard_ventas.html', form=form, ventas=total_ventas, ventas_detalle=ventas_detalle, df_ventas_agrupado=df_ventas_agrupado)
+
+
+def calcular_total_tipoventas(tipo_seleccion=None, fecha_seleccionada=None):
+    total_ventas = 0.0
+    ventas_detalle = []
+
+    if tipo_seleccion == 'dia':
+        ventas_productos = db.session.query(
+            DetalleVenta.idProducto,
+            func.sum(DetalleVenta.cantidad).label('cantidad_total'),
+            func.sum(DetalleVenta.subtotal).label('subtotal_total'),
+            Venta.fechaVenta,
+        ).join(Venta).filter(
+            Venta.idVenta == DetalleVenta.idVenta,
+            func.date(Venta.fechaVenta) == func.date(fecha_seleccionada)
+        ).group_by(DetalleVenta.idProducto, Venta.fechaVenta).all()
+
+        for producto, cantidad, subtotal, fecha_venta in ventas_productos:
+            nombre_producto = Producto.query.get(producto).nombreProducto
+            ventas_detalle.append((nombre_producto, cantidad, subtotal, fecha_venta))
+            total_ventas += subtotal
+
+    elif tipo_seleccion == 'semana':
+        fecha_inicio_semana = fecha_seleccionada - timedelta(days=fecha_seleccionada.weekday())
+        fecha_fin_semana = fecha_inicio_semana + timedelta(days=6)
+        ventas_productos = db.session.query(
+            DetalleVenta.idProducto,
+            func.sum(DetalleVenta.cantidad).label('cantidad_total'),
+            func.sum(DetalleVenta.subtotal).label('subtotal_total'),
+            Venta.fechaVenta,
+        ).join(Venta).filter(
+            Venta.idVenta == DetalleVenta.idVenta,
+            func.date(Venta.fechaVenta) >= func.date(fecha_inicio_semana),
+            func.date(Venta.fechaVenta) <= func.date(fecha_fin_semana)
+        ).group_by(DetalleVenta.idProducto, Venta.fechaVenta).all()
+
+        for producto, cantidad, subtotal, fecha_venta in ventas_productos:
+            nombre_producto = Producto.query.get(producto).nombreProducto
+            ventas_detalle.append((nombre_producto, cantidad, subtotal, fecha_venta))
+            total_ventas += subtotal
+
+    elif tipo_seleccion == 'mes':
+        primer_dia_mes = fecha_seleccionada.replace(day=1)
+        ultimo_dia_mes = primer_dia_mes.replace(day=1, month=primer_dia_mes.month % 12 + 1) - timedelta(days=1)
+        ventas_productos = db.session.query(
+            DetalleVenta.idProducto,
+            func.sum(DetalleVenta.cantidad).label('cantidad_total'),
+            func.sum(DetalleVenta.subtotal).label('subtotal_total'),
+            Venta.fechaVenta,
+        ).join(Venta).filter(
+            Venta.idVenta == DetalleVenta.idVenta,
+            func.date(Venta.fechaVenta) >= func.date(primer_dia_mes),
+            func.date(Venta.fechaVenta) <= func.date(ultimo_dia_mes)
+        ).group_by(DetalleVenta.idProducto, Venta.fechaVenta).all()
+
+        for producto, cantidad, subtotal, fecha_venta in ventas_productos:
+            nombre_producto = Producto.query.get(producto).nombreProducto
+            ventas_detalle.append((nombre_producto, cantidad, subtotal, fecha_venta))
+            total_ventas += subtotal
+            
+    elif tipo_seleccion == 'todos':
+        ventas_productos = db.session.query(
+            DetalleVenta.idProducto,
+            func.sum(DetalleVenta.cantidad).label('cantidad_total'),
+            func.sum(DetalleVenta.subtotal).label('subtotal_total'),
+            Venta.fechaVenta,
+        ).join(Venta).group_by(DetalleVenta.idProducto, Venta.fechaVenta).all()
+
+        for producto, cantidad, subtotal, fecha_venta in ventas_productos:
+            nombre_producto = Producto.query.get(producto).nombreProducto
+            ventas_detalle.append((nombre_producto, cantidad, subtotal, fecha_venta))
+            total_ventas += subtotal
+
+    else:  # Si tipo_seleccion es None, obtén todas las ventas
+        ventas_productos = db.session.query(
+            DetalleVenta.idProducto,
+            func.sum(DetalleVenta.cantidad).label('cantidad_total'),
+            func.sum(DetalleVenta.subtotal).label('subtotal_total'),
+            Venta.fechaVenta,
+        ).join(Venta).group_by(DetalleVenta.idProducto, Venta.fechaVenta).all()
+
+        for producto, cantidad, subtotal, fecha_venta in ventas_productos:
+            nombre_producto = Producto.query.get(producto).nombreProducto
+            ventas_detalle.append((nombre_producto, cantidad, subtotal, fecha_venta))
+            total_ventas += subtotal
+
+    df_ventas_agrupado = None
+    if ventas_detalle:
+        df_ventas = pd.DataFrame(ventas_detalle, columns=['Producto', 'Cantidad', 'Subtotal', 'Fecha'])
+        df_ventas_agrupado = df_ventas.groupby('Producto').agg({'Subtotal': 'sum', 'Cantidad': 'first'}).reset_index()
+        df_ventas_agrupado = df_ventas_agrupado.sort_values(by='Subtotal', ascending=False).head(10)
+
+        base_color = '#dfb98b'  # Nuevo color base
+        num_colors = len(df_ventas_agrupado)
+        color_palette = [base_color]
+
+        for i in range(num_colors - 1):
+            new_color = plt.cm.colors.hex2color(plt.cm.colors.rgb2hex(plt.cm.colors.colorConverter.to_rgb(base_color)) + (0.1, 0.1, 0.1))
+            color_palette.append(new_color)
+
+        colormap = ListedColormap(color_palette)
+
+        df_ventas_agrupado.plot(kind='bar', x='Producto', y='Subtotal', figsize=(10, 6), colormap=colormap)
+        plt.xlabel('Producto')
+        plt.ylabel('$ Total Ventas')
+        plt.title('Top 10 de Productos más Vendidos')
         plt.xticks(rotation=45, ha='right')
-        plt.legend()
-
-        # Guardar la gráfica como un archivo de imagen
-        img_path = os.path.join(app.root_path, 'static', 'img', 'compras.png')
-        plt.savefig(img_path)
-
-        # Cerrar la figura de Matplotlib para liberar memoria
+        plt.tight_layout()
+        plt.savefig('static/top_10_productos_mas_vendidos.png')
         plt.close()
 
-        # Obtener la ubicación de la imagen para pasarla a la plantilla HTML
-        img_url = url_for('static', filename='img/compras.png')
+    return total_ventas, ventas_detalle, df_ventas_agrupado
 
-    except Exception as e:
-        # Manejo de la excepción: puedes registrar el error, imprimir un mensaje de error, etc.
-        print("Error al generar la gráfica:", e)
-        img_url = None  # O proporciona una URL de imagen predeterminada
+@app.route('/ganancias', methods=['GET', 'POST'])
+@login_required
+def ganancias():
+    form = forms.GananciasForm()
+    if request.method == 'POST' and form.validate():
+        tipo_seleccion = form.tipo_seleccion.data
+        fecha_seleccionada = form.fecha.data
 
-    # Pasar los detalles de las compras y la URL de la imagen a la plantilla HTML
-    return render_template('compras.html', compras=compras, img_url=img_url)
+        ganancias_result = calcular_ganancias(tipo_seleccion, fecha_seleccionada)
+
+        if ganancias_result is None:
+            flash("No hay datos de ganancias para la fecha seleccionada.", "warning")
+            return render_template('ganancias.html', form=form)
+
+        # Verificar la longitud de ganancias_result y desempaquetar en consecuencia
+        if len(ganancias_result) == 3:
+            total_ventas, total_compras, img_url = ganancias_result
+            ganancias = None  # No hay datos de ganancias en este caso
+        else:
+            total_ventas, total_compras, ganancias, img_url = ganancias_result
+
+        return render_template('ganancias.html', form=form, total_ventas=total_ventas, total_compras=total_compras, ganancias=ganancias, img_url=img_url)
+
+    ganancias_result = calcular_ganancias()  # Si la solicitud es GET, mostrar todas las ganancias
+    if ganancias_result is None:
+        flash("No hay datos de ganancias para la fecha seleccionada.", "warning")
+        return render_template('ganancias.html', form=form)
+
+    # Verificar la longitud de ganancias_result y desempaquetar en consecuencia
+    if len(ganancias_result) == 3:
+        total_ventas, total_compras, img_url = ganancias_result
+        ganancias = None  # No hay datos de ganancias en este caso
+    else:
+        total_ventas, total_compras, ganancias, img_url = ganancias_result
+
+    return render_template('ganancias.html', form=form, total_ventas=total_ventas, total_compras=total_compras, ganancias=ganancias, img_url=img_url)
 
 
-# Ruta para servir la imagen generada
-@app.route('/img/<path:filename>')
-def custom_static(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+def calcular_ganancias(tipo_seleccion=None, fecha_seleccionada=None):
+    # Calcular el rango de fechas según el tipo de selección
+    fecha_inicio, fecha_fin = calcular_rango_fechas(tipo_seleccion, fecha_seleccionada)
+
+    # Filtrar las ventas y compras por el rango de fechas
+    total_ventas = calcular_total_ventas(fecha_inicio, fecha_fin)
+    total_compras = calcular_total_compras(fecha_inicio, fecha_fin)
+    if total_ventas == 0 and total_compras == 0:
+        flash("No hay datos disponibles para la fecha seleccionada.", "warning")
+        return None, None, None, None
+    # Calcular las ganancias
+    ganancias = total_ventas - total_compras
+
+    # Definir el color de las ganancias dependiendo de si son positivas o negativas
+    if total_ventas is None or total_compras is None:
+        flash("No hay datos disponibles para la fecha seleccionada.", "warning")
+        return None, None, None, None
+
+    # Crear la gráfica de dona con los segmentos de ventas y compras
+    plt.figure(figsize=(10, 6))  # Ajustar el tamaño de la figura
+    plt.pie([total_ventas, total_compras], labels=['Total Ventas\nCantidad: {}'.format(total_ventas), 'Total Compras\nCantidad: {}'.format(total_compras)], startangle=140, counterclock=False, colors=['green', 'red'], wedgeprops=dict(width=0.4))
+    plt.title('Total de Ventas y Compras')
+
+    # Agregar un círculo en el centro para hacerla una dona
+    centre_circle = plt.Circle((0, 0), 0.70, fc='white')
+    fig = plt.gcf()
+    fig.gca().add_artist(centre_circle)
+
+    # Guardar la gráfica como una imagen en la carpeta static
+    img_path = 'static/total_ventas_compras_dona.png'
+    plt.savefig(img_path)
+    plt.close()
+
+    # Obtener la ubicación de la imagen para pasarla a la plantilla HTML
+    img_url = url_for('static', filename='total_ventas_compras_dona.png')
+
+    return total_ventas, total_compras, ganancias, img_url
+
+def calcular_rango_fechas(tipo_seleccion=None, fecha_seleccionada=None):
+    if tipo_seleccion == 'dia':
+        # Si se selecciona la búsqueda por día, el rango de fechas será la fecha seleccionada
+        fecha_inicio = fecha_seleccionada
+        fecha_fin = fecha_seleccionada + timedelta(days=1)
+    elif tipo_seleccion == 'semana':
+        # Si se selecciona la búsqueda por semana, se calcula la semana a la que pertenece la fecha seleccionada
+        fecha_inicio_semana = fecha_seleccionada - timedelta(days=fecha_seleccionada.weekday())
+        fecha_fin_semana = fecha_inicio_semana + timedelta(days=7)
+        fecha_inicio = fecha_inicio_semana
+        fecha_fin = fecha_fin_semana
+    elif tipo_seleccion == 'mes':
+        # Si se selecciona la búsqueda por mes, se calcula el primer y último día del mes de la fecha seleccionada
+        primer_dia_mes = fecha_seleccionada.replace(day=1)
+        ultimo_dia_mes = primer_dia_mes.replace(day=1, month=primer_dia_mes.month % 12 + 1) - timedelta(days=1)
+        fecha_inicio = primer_dia_mes
+        fecha_fin = ultimo_dia_mes
+    else:
+        # Si se selecciona la búsqueda por todos, no se aplica ningún filtro de fecha
+        fecha_inicio = datetime.min
+        fecha_fin = datetime.max
+
+    return fecha_inicio, fecha_fin
+
+def calcular_total_ventas(fecha_inicio=None, fecha_fin=None):
+    if fecha_inicio is not None and fecha_fin is not None:
+        total_ventas = db.session.query(func.sum(Venta.total)).filter(Venta.fechaVenta.between(fecha_inicio, fecha_fin)).scalar()
+    else:
+        total_ventas = db.session.query(func.sum(Venta.total)).scalar()
+
+    return total_ventas if total_ventas is not None else 0.0
+
+def calcular_total_compras(fecha_inicio=None, fecha_fin=None):
+    if fecha_inicio is not None and fecha_fin is not None:
+        total_compras = db.session.query(func.sum(Detalle_materia_prima.cantidadExistentes * MateriaPrima.precioCompra)).join(MateriaPrima).filter(Detalle_materia_prima.fechaCompra.between(fecha_inicio, fecha_fin)).scalar()
+    else:
+        total_compras = db.session.query(func.sum(Detalle_materia_prima.cantidadExistentes * MateriaPrima.precioCompra)).join(MateriaPrima).scalar()
+
+    return total_compras if total_compras is not None else 0.0
+
+
+
 
 @app.route('/punto_de_venta')
+@login_required
 def punto_de_venta():
     productos = Producto.query.all()
     detalles_producto = Detalle_producto.query.filter_by(estatus=1).order_by(Detalle_producto.fechaVencimiento.desc()).all()
@@ -1705,6 +2037,7 @@ def generar_pdf(datos, fecha_compra, comprador, empresa):
     return response
 
 @app.route('/logs')
+@login_required
 def logs():
     logs = LogsUser.query.all()
 
