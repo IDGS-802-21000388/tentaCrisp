@@ -118,6 +118,8 @@ label{
 
 .btnEliminar, .btnModificar, .btnEditar{
     background: transparent;
+    border: none;
+    padding: 0;
 }
 
 .imagen-pequena {

@@ -1,12 +1,12 @@
-from flask import Flask, request, render_template, flash, g, redirect, url_for, session, jsonify
+from flask import Flask, request, render_template, flash, g, redirect, url_for, session, jsonify, make_response
 from flask_wtf.csrf import CSRFProtect
 from config import DevelopmentConfig
 import forms, ssl, base64, json, re
-from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, Detalle_materia_prima, Medida, mermaInventario ,LogsUser, Venta, DetalleVenta
+from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, Detalle_materia_prima, Medida, mermaInventario ,LogsUser, Venta, DetalleVenta, Detalle_materia_prima, Detalle_producto, Proveedor, Merma
 import forms, ssl, base64, json, re, html2text
 from sqlalchemy import func , and_
 from functools import wraps
-from flask_cors import CORS
+from flask_cors import CORS , cross_origin
 from flask_wtf.recaptcha import Recaptcha
 from datetime import datetime ,timedelta, timezone
 from flask_login import current_user, LoginManager, login_user, logout_user, login_required, login_manager
@@ -25,14 +25,28 @@ import matplotlib
 matplotlib.use('Agg')
 import numpy as np
 from matplotlib.colors import ListedColormap
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from flask import send_file , abort
+from reportlab.platypus import Table, TableStyle
+from reportlab.lib import colors
 
 
 app = Flask(__name__)
+@app.before_request
+def cors():
+    if request.remote_addr != '127.0.0.1' :
+        print ("HOLA ",request.remote_addr)
+        abort(403)
+    
+
 app.config.from_object(DevelopmentConfig)
 csrf = CSRFProtect()
-CORS(app, resources={r"/*": {"origins": app.config['CORS_ORIGINS']}})
+cors = CORS(app, resources={r"*": {"origins": "http://192.168.137.1:5000"}})
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+ssl._create_default_https_context = ssl._create_unverified_context
 #login_manager.login_view = 'login'
 # recaptcha = Recaptcha(app)
 
@@ -54,54 +68,58 @@ def prueba():
     return render_template("layout2.html")
 
 @app.route('/', methods=['GET', 'POST'])
+@cross_origin()
 def login():
     usuario_form = forms.LoginForm(request.form)
     
     if request.method == 'POST' and usuario_form.validate():
         fecha_hora_actual = datetime.now()
-        bloqueado_hasta = session.get('bloqueado_hasta')
-        bloqueado_hasta = datetime.fromisoformat(bloqueado_hasta) if bloqueado_hasta else None
         fecha_hora_actual = fecha_hora_actual.replace(microsecond=0)
 
-        if bloqueado_hasta:
-            bloqueado_hasta = bloqueado_hasta.replace(microsecond=0)
+        nombreUsuario = str(html2text.html2text(usuario_form.nombreUsuario.data)).strip()
+        contrasenia = str(html2text.html2text(usuario_form.contrasenia.data)).strip()
+        user = Usuario.query.filter_by(nombreUsuario=nombreUsuario).first()
+        intentos = user.intentos
+        if user and check_password_hash(user.contrasenia, contrasenia) and int(intentos)<3: 
+            login_user(user)
+            log = LogsUser(
+                procedimiento='Inicio de sesión',
+                lastDate=fecha_hora_actual,
+                idUsuario=user.idUsuario
+            )
+            db.session.add(log)
+            db.session.commit()
 
-        if bloqueado_hasta and (fecha_hora_actual) < bloqueado_hasta:
-            return redirect(url_for('login'))
+            user.dateLastToken = fecha_hora_actual
+            db.session.commit()
+            return jsonify({'success': True, 'redirect': url_for('index')})
         else:
-            nombreUsuario = str(html2text.html2text(usuario_form.nombreUsuario.data)).strip()
-            contrasenia = str(html2text.html2text(usuario_form.contrasenia.data)).strip()
-            print("Nombre Usuario",nombreUsuario ,"Contraseña",contrasenia)
-            print("Contraseña",generate_password_hash(contrasenia))
-            user = Usuario.query.filter_by(nombreUsuario=nombreUsuario).first()
-            if user and check_password_hash(user.contrasenia, contrasenia): 
-                login_user(user)
-                log = LogsUser(
-                    procedimiento='Inicio de sesión',
-                    lastDate=fecha_hora_actual,
-                    idUsuario=user.idUsuario
-                )
-                db.session.add(log)
+            if int(intentos)>=3:
+                user.estatus = 0
+                return jsonify({'success': False, 'error': 'Tu cuenta ha sido bloqueda.'})
+
+            else:
+                intentos+=1
+                user.intentos = intentos
                 db.session.commit()
 
-                user.dateLastToken = fecha_hora_actual
-                db.session.commit()
-                session.pop('intentos_fallidos', None)
-                return jsonify({'success': True, 'redirect': url_for('index')})
-            else:
-                session['intentos_fallidos'] = session.get('intentos_fallidos', 0) + 1
-                if session['intentos_fallidos'] >= 3:
-                    session['bloqueado_hasta'] = (fecha_hora_actual + timedelta(minutes=1)).isoformat()
-                    flash('Tu cuenta ha sido bloqueada temporalmente debido a múltiples intentos fallidos. Inténtalo de nuevo más tarde.', 'error')
                 log = LogsUser(
                     procedimiento=f'Se intento Iniciar Sesión con las credenciales usuario:{nombreUsuario} y contraseña:{contrasenia} ',
                     lastDate=fecha_hora_actual,
                     idUsuario=0
                 )
+            
                 db.session.add(log)
                 db.session.commit()
+
+                log = LogsUser(
+                    procedimiento=f'Se intento Iniciar Sesión con las credenciales usuario:{nombreUsuario} y contraseña:{contrasenia} ',
+                    lastDate=fecha_hora_actual,
+                    idUsuario=0
+                )
+
                 return jsonify({'success': False, 'error': 'Usuario o contraseña inválidos'})
-        
+    
     return render_template('login.html', form=usuario_form)
 
 @app.route('/logout', methods=['GET', 'POST'])
@@ -121,6 +139,7 @@ def index():
 
 # Ruta para agregar una nuevo Proveedor
 @app.route("/proveedor", methods=['GET', 'POST'])
+@login_required
 def proveedor():
     nombreProveedor = ""
     direccion = ""
@@ -155,6 +174,7 @@ def proveedor():
 
 # Ruta para eliminar un Proveedor
 @app.route("/eliminar_proveedor", methods=['POST'])
+@login_required
 def eliminar_proveedor():
     id_proveedor = int(request.form.get("id"))
     proveedor = Proveedor.query.get(id_proveedor)
@@ -170,6 +190,7 @@ def eliminar_proveedor():
 
 # Ruta para editar un Proveedor
 @app.route('/editar_proveedor', methods=['POST'])
+@login_required
 def editar_proveedor():
     provedor = forms.ProveedorForm(request.form)
     id_proveedor = request.form.get('editIdProveedor')
@@ -201,6 +222,7 @@ def editar_proveedor():
 
 # Inicio del Modulo de Materia Prima
 @app.route("/inventario", methods=['GET', 'POST'])
+@login_required
 def inventario():
     nombreMateria = ""
     precio = ""
@@ -630,6 +652,7 @@ def procesar_datos(materias_primas, detalles_primas):
     return datos_procesados
 
 @app.route('/editar_inventario', methods=['POST'])
+@login_required
 def editar_inventario():
     nombreMateria = ""
     precio = ""
@@ -1018,6 +1041,7 @@ def editar_inventario():
     return redirect(url_for('inventario'))
 
 @app.route("/eliminar_inventario", methods=['POST'])
+@login_required
 def eliminar_inventario():
     id_detalle_prima = int(request.form.get("idDetallePrima"))
     detalle_prima = Detalle_materia_prima.query.get(id_detalle_prima)
@@ -1034,6 +1058,7 @@ def eliminar_inventario():
     return redirect(url_for('proveedor'))
 
 @app.route("/registrar_merma", methods=['POST'])
+@login_required
 def registrar_merma():
     id_detalle_prima = ""
     cantidad_merma = 0
@@ -1269,8 +1294,7 @@ def producir():
         cantidadMerma = int(request.form.get('cantidadMerma')) if request.form.get('cantidadMerma') else 0
         idProducto = int(request.form.get('productoSeleccionado')) if request.form.get('productoSeleccionado') else 0
         fechaVencimiento = request.form.get('fechaVencimiento') if request.form.get('fechaVencimiento') else 0
-        print('fechaVencimiento')
-        print(fechaVencimiento)
+
         if idProducto == 0 or fechaVencimiento == 0:
             flash('Por favor, completa todos los campos correctamente', 'error')
             return redirect(url_for('productos'))
@@ -1280,6 +1304,14 @@ def producir():
             idProducto=idProducto
         )
         db.session.add(detalle_producto)
+        db.session.commit()
+
+        merma = Merma(
+            cantidadMerma=cantidadMerma,
+            idProducto=idProducto,
+            idDetalle_producto=detalle_producto.idDetalle_producto
+        )        
+        db.session.add(merma)
         db.session.commit()
 
         receta = Receta.query.filter_by(idProducto=idProducto).first()
@@ -1394,6 +1426,7 @@ def getAllIngredientes():
 password_pattern = re.compile(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$')
 
 @app.route('/usuarios', methods=['GET', 'POST'])
+@login_required
 def usuarios():
     usuario_form = forms.UsuarioForm(request.form)
     if request.method == 'POST' and usuario_form.validate():
@@ -1434,6 +1467,7 @@ def usuarios():
 
 
 @app.route('/editar_usuario', methods=['POST'])
+@login_required
 def editar_usuario():
     usuario_form = forms.UsuarioForm(request.form)
     id_usuario = request.form.get('editIdUsuario')
@@ -1475,6 +1509,7 @@ lista_contraseñas_no_seguras = [
 ]
     
 @app.route('/cambiar_estado_usuario/<int:id_usuario>', methods=['POST','GET'])
+@login_required
 def cambiar_estado_usuario(id_usuario):
     usuario = Usuario.query.get(id_usuario)
     if usuario:
@@ -1486,7 +1521,8 @@ def cambiar_estado_usuario(id_usuario):
 
     return redirect(url_for('usuarios'))
 
-@app.route('/compras', methods=['GET', 'POST'])
+@app.route('/compras')
+@login_required
 def mostrar_compras():
     form = forms.ComprasForm()  # Crear una instancia del formulario de compras
 
@@ -1595,6 +1631,7 @@ def calcular_total_compras():
 
 
 @app.route('/ventas', methods=['GET', 'POST'])
+@login_required
 def ventas():
     form = forms.VentasForm()  # Crear una instancia del formulario de ventas
 
@@ -1727,6 +1764,7 @@ def calcular_total_tipoventas(tipo_seleccion=None, fecha_seleccionada=None):
     return total_ventas, ventas_detalle, df_ventas_agrupado
 
 @app.route('/ganancias', methods=['GET', 'POST'])
+@login_required
 def ganancias():
     form = forms.GananciasForm()
     if request.method == 'POST' and form.validate():
@@ -1844,6 +1882,166 @@ def calcular_total_compras(fecha_inicio=None, fecha_fin=None):
 
 
 
+@app.route('/punto_de_venta')
+@login_required
+def punto_de_venta():
+    productos = Producto.query.all()
+    detalles_producto = Detalle_producto.query.filter_by(estatus=1).order_by(Detalle_producto.fechaVencimiento.desc()).all()
+    print(detalles_producto)
+    print(productos)
+    return render_template('venta.html', productos=productos, detalles_producto=detalles_producto)
+
+
+@app.route('/pv_galleta_ticket', methods=['POST'])
+@login_required
+def pv_galleta():
+    datos = request.form.get('datos2')
+    user = request.form.get('user')
+    empresa = 'TentaCrisp'
+    print(datos)
+    datosPy = json.loads(datos)
+    print(datosPy)
+    cantidad = 0
+
+    total = calcular_total(datosPy)
+    fecha = datetime.now()
+
+    nueva_venta = Venta(total=total, fechaVenta=fecha)
+    db.session.add(nueva_venta)
+    db.session.commit()
+    
+
+    for detalle in datosPy:
+        cantidad = detalle['piezas'] + detalle['caja700g'] + detalle['caja1kg'] + detalle['gramos']
+        id_producto = detalle['id']
+        nuevo_detalle = DetalleVenta(
+            cantidad=cantidad,
+            subtotal=detalle['subtotal'],
+            idProducto=detalle['id'],
+            idVenta=nueva_venta.idVenta,
+            idMedida=1
+        )
+        db.session.add(nuevo_detalle)
+        descontar_cantidad_producto(id_producto, cantidad)
+
+    db.session.commit()
+
+    return generar_pdf(datosPy,fecha,user,empresa)
+
+@app.route('/pv_galleta', methods=['POST'])
+@login_required
+def pv_galleta_Sin_Ticket():
+    datos = request.form.get('datos')
+    datosPy = json.loads(datos)
+    cantidad = 0
+
+    total = calcular_total(datosPy)
+    fecha = datetime.now()
+
+    nueva_venta = Venta(total=total, fechaVenta=fecha)
+    db.session.add(nueva_venta)
+    db.session.commit()
+    
+
+    for detalle in datosPy:
+        cantidad = detalle['piezas'] + detalle['caja700g'] + detalle['caja1kg'] + detalle['gramos']
+        id_producto = detalle['id']
+        nuevo_detalle = DetalleVenta(
+            cantidad=cantidad,
+            subtotal=detalle['subtotal'],
+            idProducto=detalle['id'],
+            idVenta=nueva_venta.idVenta,
+            idMedida=1
+        )
+        db.session.add(nuevo_detalle)
+        descontar_cantidad_producto(id_producto, cantidad)
+
+    db.session.commit()
+
+    return redirect(url_for('punto_de_venta'))
+
+
+def descontar_cantidad_producto(id_producto, cantidad):
+    print("id_producto: ", id_producto)
+    detalle_producto = Detalle_producto.query.filter_by(idProducto=id_producto).first()
+
+    if detalle_producto:
+        if detalle_producto.cantidadExistentes >= cantidad:
+            detalle_producto.cantidadExistentes -= cantidad
+            db.session.commit()
+        else:
+            flash("No hay suficiente producto en existencia", "error")
+    else:
+        flash("El producto no fue encontrado", "error")
+
+
+def calcular_total(datos):
+    total = 0
+    for detalle in datos:
+        total += detalle['subtotal']
+    return total
+
+def generar_pdf(datos, fecha_compra, comprador, empresa):
+    datosPy = datos
+    
+    pdf_filename = "venta.pdf"
+    c = canvas.Canvas(pdf_filename, pagesize=letter)
+
+    logo_path = "static/img/Galletas-removebg-preview (1).png"
+    c.drawImage(logo_path, 250, 220, width=100, height=100)
+    # Agregar título
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(100, 670, "!Vuelva pronto¡")
+
+    c.setFont("Helvetica", 12)
+    c.drawString(100, 650, f"Fecha de compra: {fecha_compra}")
+    c.drawString(100, 630, f"Lo atendio : {comprador}")
+    c.setFillColorRGB(0.1, 0.3, 0.5)
+    c.drawString(100, 610, empresa)
+
+    # Agregar los datos como tabla centrada
+    datos_tabla = [["Piezas", "Caja 700g", "Caja 1kg", "Gramos", "Subtotal"]]
+    for detalle in datosPy:
+        datos_tabla.append([
+            detalle['piezas'],
+            detalle['caja700g'],
+            detalle['caja1kg'],
+            detalle['gramos'],
+            detalle['subtotal']
+        ])
+    
+    tabla = Table(datos_tabla)
+    tabla.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+
+    width, height = letter
+    tabla.wrapOn(c, width-100, height)
+    tabla.drawOn(c, (width-tabla._width)/2, 400)
+
+    total = sum(detalle['subtotal'] for detalle in datosPy)
+    c.drawString(100, 100, f"Total: ${total}")
+
+    c.save()
+
+    response = make_response(send_file(pdf_filename, as_attachment=True))
+    response.headers['Content-Disposition'] = 'attachment; filename=venta.pdf'
+    return response
+
+@app.route('/logs')
+@login_required
+def logs():
+    logs = LogsUser.query.all()
+
+    return render_template('logs.html', logs=logs)
 
 if __name__ == '__main__':
     csrf.init_app(app)
@@ -1851,4 +2049,4 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         
-    app.run()
+    app.run(host='0.0.0.0')

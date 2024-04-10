@@ -11,7 +11,6 @@
                     <th>Nombre Materia</th>
                     <th>Cantidad Existentes</th>
                     <th>Fecha Vencimiento</th>
-                    <th>Porcentaje</th>
                 </tr>
             </thead>
             <tbody>
@@ -20,7 +19,6 @@
                     <td>{{ dato.nombre }}</td>
                     <td>{{ dato.cantidad_existente }}</td>
                     <td>{{ dato.fecha_vencimiento }}</td>
-                    <td>{{ dato.porcentaje }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -39,7 +37,6 @@
                         <th>Tipo</th>
                         <th>Fecha Compra</th>
                         <th>Fecha Vencimiento</th>
-                        <th>Porcentaje</th>
                         <th>Proveedor</th>
                         <th>Acciones</th>
                     </tr>
@@ -56,7 +53,6 @@
                         <td>{{ materia_prima.medida.tipoMedida }}</td>
                         <td>{{ detalle_prima.fechaCompra }}</td>
                         <td>{{ detalle_prima.fechaVencimiento }}</td>
-                        <td>{{ detalle_prima.porcentaje }}</td>
                         <td>{{ materia_prima.proveedor.nombreProveedor }}</td>
                         <td>
                             <button class="btnEditarMateria" data-id="{{ materia_prima.idMateriaPrima }}"

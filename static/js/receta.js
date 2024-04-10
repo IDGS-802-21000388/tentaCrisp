@@ -34,6 +34,9 @@ $(document).ready(function() {
 
     $('#tblProductos').DataTable({
         dom: "<'row' <'col-sm-6'l><'col-sm-5'f>>  <'row' <'col-sm-12'tr>>  <'row' <'col-4'i><'col'p>>",
+        columnDefs: [
+            { targets: [1], visible: false }
+        ],
         initComplete: function(){
             $('.dataTables_filter').addClass('text-end');
         },

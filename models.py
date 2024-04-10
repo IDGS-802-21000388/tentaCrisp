@@ -13,6 +13,7 @@ class Usuario(db.Model, UserMixin):
     rol = db.Column(db.String(30), nullable=False)
     estatus = db.Column(db.Integer, nullable=False, default=1)
     telefono = db.Column(db.String(15), nullable=False, default="")
+    intentos = db.Column(db.Integer, nullable=False, default=0)
     dateLastToken = db.Column(db.DateTime, nullable=True, default=datetime.utcnow)
     def is_active(self):
         return self.estatus != 0
@@ -81,11 +82,11 @@ class Detalle_producto(db.Model):
 
     idProducto = db.Column(db.Integer, db.ForeignKey('producto.idProducto'))
 
-class merma(db.Model):
+class Merma(db.Model):
     idMerma = db.Column(db.Integer, primary_key=True, autoincrement=True)
     cantidadMerma= db.Column(db.Float, nullable=False, default=0.0)
     idProducto = db.Column(db.Integer, db.ForeignKey('producto.idProducto'))
-    idMateriaPrima = db.Column(db.Integer, db.ForeignKey('materia_prima.idMateriaPrima'))
+    idDetalle_producto = db.Column(db.Integer, db.ForeignKey('detalle_producto.idDetalle_producto'))
 
 class mermaInventario(db.Model):
     idMerma = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -130,3 +131,8 @@ class Movimiento(db.Model):
     monto = db.Column(db.Float, nullable=False, default=0.0)
     idVenta = db.Column(db.Integer, db.ForeignKey('venta.idVenta'))
     idMateriaPrima = db.Column(db.Integer, db.ForeignKey('materia_prima.idMateriaPrima'))
+
+class solicitudProduccion(db.Model):
+    idSolicitud = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    fechaSolicitud = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    idProducto = db.Column(db.Integer, db.ForeignKey('producto.idProducto'))

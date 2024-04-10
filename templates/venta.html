@@ -1,42 +1,187 @@
 {% extends "layout.html" %}
-<div class="container">
-    <h1 class="text-center mb-5">
-        Pedido
-    </h1>
-    <div class="row" id="contenedorGalletas">
 
-        <!-- Aquí se generarán dinámicamente las imágenes y textos de cantidad -->
+{% block content %}
+<style>
+    .productos-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        /* Ajusta el espacio entre los elementos */
+    }
+
+    .producto {
+        width: calc(20% - 20px);
+        /* Ancho del cuadro del producto, menos el margen */
+        margin: 10px;
+        /* Margen exterior */
+        padding: 10px;
+        /* Espacio interno */
+        border: 1px solid #ccc;
+        /* Borde del cuadro */
+        border-radius: 5px;
+        /* Bordes redondeados */
+        background-color: #f9f9f9;
+        /* Color de fondo */
+        text-align: center;
+        /* Alineación del contenido */
+    }
+
+    .producto img {
+        max-width: 100%;
+        /* La imagen no superará el ancho del contenedor */
+        height: auto;
+        /* Altura automática */
+        margin-bottom: 10px;
+        /* Espacio inferior */
+    }
+
+    .producto h3 {
+        font-size: 16px;
+        /* Tamaño de fuente del nombre del producto */
+        margin-bottom: 5px;
+        /* Espacio inferior */
+    }
+
+    .producto p {
+        font-size: 14px;
+        /* Tamaño de fuente del precio */
+        color: #666;
+        /* Color del texto */
+    }
+
+    /* Estilos para el enlace que envuelve el producto */
+    .producto form {
+        display: block;
+        margin-top: 10px;
+        /* Espacio entre el producto y el formulario */
+    }
+
+    .producto form input[type="number"] {
+        width: 50px;
+        /* Ancho del campo de entrada para la cantidad */
+        margin-right: 5px;
+        /* Espacio entre los campos de entrada */
+    }
+
+    .producto form select {
+        margin-right: 5px;
+        /* Espacio entre los campos de entrada */
+    }
+
+    .producto form button {
+        background-color: #007bff;
+        /* Color de fondo del botón */
+        color: #fff;
+        /* Color del texto del botón */
+        border: none;
+        /* Sin borde */
+        border-radius: 5px;
+        /* Bordes redondeados */
+        padding: 5px 10px;
+        /* Espacio interno del botón */
+        cursor: pointer;
+    }
+
+    .producto form button:hover {
+        background-color: #0056b3;
+        /* Color de fondo del botón al pasar el mouse */
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th,
+    td {
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+    }
+
+    /* Estilos para el formulario */
+    form {
+        margin-top: 20px;
+    }
+
+    form input[type="number"] {
+        width: 50px;
+        margin-right: 5px;
+    }
+
+    form select {
+        margin-right: 5px;
+    }
+
+    form button {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        padding: 5px 10px;
+        cursor: pointer;
+    }
+
+    form button:hover {
+        background-color: #0056b3;
+    }
+</style>
+
+<div class="productos-container">
+    {% for producto in productos %}
+    <div class="producto">
+        <img src="data:image/jpeg;base64,{{ producto.fotografia }}" alt="{{ producto.nombreProducto }}">
+        <h3>{{ producto.nombreProducto }}</h3>
+        <p>Precio: ${{ producto.precioVenta }}</p>
+        <form
+            onsubmit="return agregarAlCarrito(event, '{{ producto.idProducto }}', '{{ producto.nombreProducto }}', '{{ producto.precioVenta }}')">
+            <input type="number" name="cantidad" value="1" min="1" required style="display: none;">
+            <button type="submit">Agregar al carrito</button>
+        </form>
     </div>
-
-    <div class="table-container">
-        <table id="tblProductos" class="table table-hover table-sm">
-            <thead>
-                <tr>
-                    <th id="tblCabecera">Nombre del producto</th>
-                    <th id="tblCabecera">Piezas</th>
-                    <th id="tblCabecera">Caja 1k o 1/2k</th>
-                    <th id="tblCabecera">Gramos</th>
-                    <th id="tblCabecera">Dinero</th>
-                    <th id="tblCabecera">Precio de venta por pieza</th>
-                    <th id="tblCabecera">Total</th>
-                    <th id="tblBtn"></th>
-                </tr>
-            </thead>
-            <tbody>
-
-            </tbody>
-        </table> 
-        <div class="total-container">
-            <label for="totalInput">Total:</label>
-            <input type="text" id="totalInput" readonly>
-        </div>
-        <div class="button-container btnEnd">
-
-            <button class="btn btn-success" id="btnComprar" onclick="moduloPuntoDeVenta.guardarVenta();"  >Confirmar Pedido</button>
-        </div>
-    </div>
-
-
+    {% endfor %}
 </div>
+
+<form action="">
+    <table id="carrito">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Piezas</th>
+                <th>Caja 700g</th>
+                <th>Caja 1kg</th>
+                <th>Gramos</th>
+                <th>Subtotal</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="carrito-body">
+            <!-- Aquí se agregará dinámicamente el contenido del carrito -->
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="5" style="text-align: right;">Total:</td>
+                <td id="total">$0.00</td>
+            </tr>
+        </tfoot>
+    </table>
+
+</form>
+<form id="formularioVenta" action="/pv_galleta" method="post">
+    <input type="hidden" id="datos" name="datos" />
+    <input type="hidden" name="user" value="{{ current_user.nombreUsuario }}" />
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <button type="submit" class="btn btn-success">Generar Venta</button>
+    
+</form>
+
+<form id="formularioVenta" action="/pv_galleta_ticket" method="post">
+    <input type="hidden" id="datos2" name="datos2" />
+    <input type="hidden" name="user" value="{{ current_user.nombreUsuario }}" />
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <button type="submit" id="btnLimpiar" class="btn btn-success">Generar Venta con Ticket</button>
+    
+</form>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
 {% endblock %}

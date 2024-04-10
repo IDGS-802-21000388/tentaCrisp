@@ -39,7 +39,7 @@
                                 <input type="hidden" name="fecha_vencimiento1" value="">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                                 {% if producto['estatus'] %}
-                                    <button data-fecha="{{ producto['fechaVencimiento'] }}" type="button" style="background: transparent;" class="btnLogicoDel"
+                                    <button data-fecha="{{ producto['fechaVencimiento'] }}" type="button" style="background: transparent;border: None;" class="btnLogicoDel"
                                         onclick="confirmarAccion('{{ producto.idProducto }}', 'eliminar')">
                                         <i class="fa-solid fa-trash" style="color: #c12525;"></i>
                                     </button>
