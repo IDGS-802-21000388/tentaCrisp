@@ -6,7 +6,7 @@ from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_produ
 import forms, ssl, base64, json, re, html2text
 from sqlalchemy import func , and_
 from functools import wraps
-from flask_cors import CORS
+from flask_cors import CORS , cross_origin
 from flask_wtf.recaptcha import Recaptcha
 from datetime import datetime ,timedelta, timezone
 from flask_login import current_user, LoginManager, login_user, logout_user, login_required, login_manager
@@ -22,18 +22,26 @@ from io import BytesIO
 import base64
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from flask import send_file
+from flask import send_file , abort
 from reportlab.platypus import Table, TableStyle
 from reportlab.lib import colors
 
 
-
 app = Flask(__name__)
+@app.before_request
+def cors():
+    if request.remote_addr != '127.0.0.1' :
+        print ("HOLA ",request.remote_addr)
+        abort(403)
+    
+
 app.config.from_object(DevelopmentConfig)
 csrf = CSRFProtect()
-CORS(app, resources={r"/*": {"origins": app.config['CORS_ORIGINS']}})
+cors = CORS(app, resources={r"*": {"origins": "http://192.168.137.1:5000"}})
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+ssl._create_default_https_context = ssl._create_unverified_context
 #login_manager.login_view = 'login'
 # recaptcha = Recaptcha(app)
 
@@ -55,6 +63,7 @@ def prueba():
     return render_template("layout2.html")
 
 @app.route('/', methods=['GET', 'POST'])
+@cross_origin()
 def login():
     usuario_form = forms.LoginForm(request.form)
     
@@ -122,6 +131,7 @@ def index():
 
 # Ruta para agregar una nuevo Proveedor
 @app.route("/proveedor", methods=['GET', 'POST'])
+@login_required
 def proveedor():
     nombreProveedor = ""
     direccion = ""
@@ -156,6 +166,7 @@ def proveedor():
 
 # Ruta para eliminar un Proveedor
 @app.route("/eliminar_proveedor", methods=['POST'])
+@login_required
 def eliminar_proveedor():
     id_proveedor = int(request.form.get("id"))
     proveedor = Proveedor.query.get(id_proveedor)
@@ -171,6 +182,7 @@ def eliminar_proveedor():
 
 # Ruta para editar un Proveedor
 @app.route('/editar_proveedor', methods=['POST'])
+@login_required
 def editar_proveedor():
     provedor = forms.ProveedorForm(request.form)
     id_proveedor = request.form.get('editIdProveedor')
@@ -202,6 +214,7 @@ def editar_proveedor():
 
 # Inicio del Modulo de Materia Prima
 @app.route("/inventario", methods=['GET', 'POST'])
+@login_required
 def inventario():
     nombreMateria = ""
     precio = ""
@@ -631,6 +644,7 @@ def procesar_datos(materias_primas, detalles_primas):
     return datos_procesados
 
 @app.route('/editar_inventario', methods=['POST'])
+@login_required
 def editar_inventario():
     nombreMateria = ""
     precio = ""
@@ -1019,6 +1033,7 @@ def editar_inventario():
     return redirect(url_for('inventario'))
 
 @app.route("/eliminar_inventario", methods=['POST'])
+@login_required
 def eliminar_inventario():
     id_detalle_prima = int(request.form.get("idDetallePrima"))
     detalle_prima = Detalle_materia_prima.query.get(id_detalle_prima)
@@ -1035,6 +1050,7 @@ def eliminar_inventario():
     return redirect(url_for('proveedor'))
 
 @app.route("/registrar_merma", methods=['POST'])
+@login_required
 def registrar_merma():
     id_detalle_prima = ""
     cantidad_merma = 0
@@ -1401,6 +1417,7 @@ def getAllIngredientes():
 password_pattern = re.compile(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$')
 
 @app.route('/usuarios', methods=['GET', 'POST'])
+@login_required
 def usuarios():
     usuario_form = forms.UsuarioForm(request.form)
     if request.method == 'POST' and usuario_form.validate():
@@ -1441,6 +1458,7 @@ def usuarios():
 
 
 @app.route('/editar_usuario', methods=['POST'])
+@login_required
 def editar_usuario():
     usuario_form = forms.UsuarioForm(request.form)
     id_usuario = request.form.get('editIdUsuario')
@@ -1483,6 +1501,7 @@ lista_contraseñas_no_seguras = [
 ]
     
 @app.route('/cambiar_estado_usuario/<int:id_usuario>', methods=['POST','GET'])
+@login_required
 def cambiar_estado_usuario(id_usuario):
     usuario = Usuario.query.get(id_usuario)
     if usuario:
@@ -1495,6 +1514,7 @@ def cambiar_estado_usuario(id_usuario):
     return redirect(url_for('usuarios'))
 
 @app.route('/compras')
+@login_required
 def mostrar_compras():
     compras = Detalle_materia_prima.query.all()  # Obtener todas las compras de materia prima
     
@@ -1551,6 +1571,7 @@ def custom_static(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/punto_de_venta')
+@login_required
 def punto_de_venta():
     productos = Producto.query.all()
     detalles_producto = Detalle_producto.query.filter_by(estatus=1).order_by(Detalle_producto.fechaVencimiento.desc()).all()
@@ -1704,6 +1725,7 @@ def generar_pdf(datos, fecha_compra, comprador, empresa):
     return response
 
 @app.route('/logs')
+@login_required
 def logs():
     logs = LogsUser.query.all()
 
@@ -1715,4 +1737,4 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         
-    app.run()
+    app.run(host='0.0.0.0')
