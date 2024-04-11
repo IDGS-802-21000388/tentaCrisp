@@ -36,10 +36,8 @@ app = Flask(__name__)
 @app.before_request
 def cors():
     if request.remote_addr != '127.0.0.1' :
-        print ("HOLA ",request.remote_addr)
         abort(403)
     
-
 app.config.from_object(DevelopmentConfig)
 csrf = CSRFProtect()
 cors = CORS(app, resources={r"*": {"origins": "http://192.168.137.1:5000"}})
@@ -63,9 +61,37 @@ def unauthorized():
     #flash('Por favor, inicia sesión para acceder a esta página.', 'warning')
     return redirect(url_for('login'))
 
-@app.route('/prueba')
-def prueba():
-    return render_template("layout2.html")
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if current_user.rol != 'Administrador':
+            flash('No tienes permisos', 'warning')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def ventas_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        print(current_user.rol)
+        if current_user.rol != 'Administrador':
+            if current_user.rol != 'Ventas' or current_user.rol != 'Administrador':
+                flash('No tienes permisos', 'warning')
+                return redirect(url_for('index'))
+            return f(*args, **kwargs)
+        return f(*args, **kwargs)
+    return decorated_function
+
+def produccion_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if current_user.rol != 'Administrador':
+            if current_user.rol != 'Produccion':
+                flash('No tienes permisos', 'warning')
+                return redirect(url_for('index'))
+            return f(*args, **kwargs)
+        return f(*args, **kwargs)
+    return decorated_function
 
 @app.route('/', methods=['GET', 'POST'])
 @cross_origin()
@@ -140,6 +166,7 @@ def index():
 # Ruta para agregar una nuevo Proveedor
 @app.route("/proveedor", methods=['GET', 'POST'])
 @login_required
+@admin_required
 def proveedor():
     nombreProveedor = ""
     direccion = ""
@@ -1101,6 +1128,7 @@ def registrar_merma():
 
 @app.route('/recetas', methods=['GET', 'POST'])
 @login_required
+@produccion_required
 def recetas():
     getAllingredientes = getAllIngredientes()
     nueva_galleta_form = forms.NuevaGalletaForm()
@@ -1288,6 +1316,7 @@ def eliminar_producto():
 
 @app.route('/producir', methods=['POST'])
 @login_required
+@produccion_required
 def producir():
     if request.method == 'POST':
         cantidadProduccion = 40
@@ -1427,6 +1456,7 @@ password_pattern = re.compile(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A
 
 @app.route('/usuarios', methods=['GET', 'POST'])
 @login_required
+@admin_required
 def usuarios():
     usuario_form = forms.UsuarioForm(request.form)
     if request.method == 'POST' and usuario_form.validate():
@@ -1523,6 +1553,7 @@ def cambiar_estado_usuario(id_usuario):
 
 @app.route('/compras')
 @login_required
+@produccion_required
 def mostrar_compras():
     form = forms.ComprasForm()  # Crear una instancia del formulario de compras
 
@@ -1631,6 +1662,7 @@ def calcular_total_compras():
 
 
 @app.route('/ventas', methods=['GET', 'POST'])
+@admin_required
 @login_required
 def ventas():
     form = forms.VentasForm()  # Crear una instancia del formulario de ventas
@@ -1765,6 +1797,7 @@ def calcular_total_tipoventas(tipo_seleccion=None, fecha_seleccionada=None):
 
 @app.route('/ganancias', methods=['GET', 'POST'])
 @login_required
+@admin_required
 def ganancias():
     form = forms.GananciasForm()
     if request.method == 'POST' and form.validate():
@@ -1884,6 +1917,7 @@ def calcular_total_compras(fecha_inicio=None, fecha_fin=None):
 
 @app.route('/punto_de_venta')
 @login_required
+@ventas_required
 def punto_de_venta():
     productos = Producto.query.all()
     detalles_producto = Detalle_producto.query.filter_by(estatus=1).order_by(Detalle_producto.fechaVencimiento.desc()).all()
@@ -2038,6 +2072,7 @@ def generar_pdf(datos, fecha_compra, comprador, empresa):
 
 @app.route('/logs')
 @login_required
+@admin_required
 def logs():
     logs = LogsUser.query.all()
 
