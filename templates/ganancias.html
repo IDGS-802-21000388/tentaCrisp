@@ -4,18 +4,28 @@
 
 <div class="container">
   <h1 class="mt-5">Ganancias</h1>
-  <form id="ventas-form" method="post" class="mt-3">
+  <form id="ventas-form" method="post" class="mt-5">
     {{ form.csrf_token }}
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-    <div class="form-group">
-      <label for="tipo_seleccion">Seleccionar tipo de ganancias:</label>
-      {{ render_field(form.tipo_seleccion, class="form-control", id="tipo_seleccion") }}
+    <div class="row">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label for="tipo_seleccion">Seleccionar tipo de ganancias:</label>
+          {{ render_field(form.tipo_seleccion, class="form-control", id="tipo_seleccion") }}
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label for="fecha">Seleccionar fecha:</label>
+          {{ render_field(form.fecha, class="form-control", id="fecha") }}
+        </div>
+      </div>
     </div>
-    <div class="form-group">
-      <label for="fecha">Seleccionar fecha:</label>
-      {{ render_field(form.fecha, class="form-control", id="fecha") }}
+    <div class="row">
+      <div class="col-md-6">
+        <button type="submit" class="btn btn-primary mt-4">Mostrar Ganancias</button>
+      </div>
     </div>
-    <button type="submit" class="btn btn-primary">Mostrar Ganancias</button>
   </form>
   {% if total_ventas is not none or total_compras is not none %}
     <div class="mt-5" id="grafica-container">
@@ -23,14 +33,24 @@
     </div>
   {% endif %}
   {% if ganancias is none %}
-    <p class="mt-3">Ganancias: $0</p>
-  {% else %}
-    <p class="mt-3">Ganancias: ${{ ganancias }}</p>
-  {% endif %}
-</div>
-<button onclick="toggleGrafica()" class="btn btn-primary mt-3">Mostrar/Ocultar Gráfica</button>
+  <div class="mt-3 ">
+    <strong>Ganancias: $0</strong>
+  </div>
+{% else %}
+  <div class="mt-3 ">
+    <strong>Ganancias: ${{ ganancias }}</strong>
+  </div>
+{% endif %}
 
-<a href="{{ url_for('ventas') }}" class="btn btn-primary mt-3">Ventas</a>
+</div>
+<div class="row mt-3">
+  <div class="col-md-6">
+    <button onclick="toggleGrafica()" class="btn btn-primary btn-block">Mostrar/Ocultar Gráfica</button>
+  </div>
+  <div class="col-md-6">
+    <a href="{{ url_for('ventas') }}" class="btn btn-primary btn-block">Ventas</a>
+  </div>
+</div>
 <script src="{{ url_for('static', filename='js/ganancias.js') }}"></script>
 
 {% endblock %}
