@@ -1,8 +1,10 @@
-let precioGalleta = 0;
+const preciosGalleta = {};
 let subtotales = {};
 
 function agregarAlCarrito(event, idProducto, nombreProducto, precioProducto) {
     precioGalleta = precioProducto;
+    const precioGalleta = preciosGalleta[idProducto] || precioProducto;
+    console.log(precioGalleta);
     event.preventDefault();
     
     const cantidadInput = event.target.querySelector('input[name="cantidad"]');

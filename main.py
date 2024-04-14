@@ -2,7 +2,7 @@ from flask import Flask, request, render_template, flash, g, redirect, url_for, 
 from flask_wtf.csrf import CSRFProtect
 from config import DevelopmentConfig
 import forms, ssl, base64, json, re
-from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, Detalle_materia_prima, Medida, mermaInventario ,LogsUser, Venta, DetalleVenta, Detalle_materia_prima, Detalle_producto, Proveedor, Merma
+from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, Detalle_materia_prima, Medida, merma_inventario ,LogsUser, Venta, DetalleVenta, Detalle_materia_prima, Detalle_producto, Proveedor, Merma
 import forms, ssl, base64, json, re, html2text
 from sqlalchemy import func , and_
 from functools import wraps
@@ -78,6 +78,9 @@ def login():
 
         nombreUsuario = str(html2text.html2text(usuario_form.nombreUsuario.data)).strip()
         contrasenia = str(html2text.html2text(usuario_form.contrasenia.data)).strip()
+        print("Nombre Usuario",nombreUsuario)
+        hashed_password = generate_password_hash(contrasenia)
+        print("Contraseña", hashed_password)
         user = Usuario.query.filter_by(nombreUsuario=nombreUsuario).first()
         intentos = user.intentos
         if user and check_password_hash(user.contrasenia, contrasenia) and int(intentos)<3: 
@@ -281,7 +284,7 @@ def inventario():
             ("Leche", 1000),  # 1 litro de leche
             ("Mermelada de fresa", 980),  # 980 gramos de mermelada de fresa
             ("Harina", 1000),
-            ("Azucar Glass", 1000),
+            ("Azucar Glass", 1000)
         ]
         #Tupla de Ingredientes de bultos
         ingredientes_de_bultos = [
@@ -316,7 +319,7 @@ def inventario():
                         gramos_ajustados = float(cantidad) * float(campoKilosBulto) - (float(cantidad) * float(campoKilosBulto) * float(porcentaje_cascara) / 100)
                         flash("Kilos ajustados Bulto" , gramos_ajustados)
                         porcentaje = float((gramos_ajustados / (float(valor_unidad) * 50)) * 100)
-                        if nombreMateria in ingredientes_liquidos:
+                        if nombreMateria == "Leche" or nombreMateria == "Vainilla":
                             idMedida = 3
                         elif nombreMateria == "Huevo":
                             idMedida = 1
@@ -359,7 +362,7 @@ def inventario():
                     else:
                         gramos_ajustados = valor_unidad * (float(cantidad) * float(campoKilosBulto))
 
-                        if nombreMateria in ingredientes_liquidos:
+                        if nombreMateria == "Leche" or nombreMateria == "Vainilla":
                             idMedida = 3
                         elif nombreMateria == "Huevo":
                             idMedida = 1
@@ -415,7 +418,7 @@ def inventario():
                         gramos_ajustados = datos_sin_porcentaje - datos_de_porcentaje
                         porcentaje = float((gramos_ajustados / (float(valor_unidad) * 50)) * 100)
 
-                        if nombreMateria in ingredientes_liquidos:
+                        if nombreMateria == "Leche" or nombreMateria == "Vainilla":
                             idMedida = 3
                         elif nombreMateria == "Huevo":
                             idMedida = 1
@@ -458,7 +461,7 @@ def inventario():
 
                     else:
                         gramos_ajustados = valor_unidad * (float(cantidad) * float(valor_unidad))
-                        if nombreMateria in ingredientes_liquidos:
+                        if nombreMateria == "Leche" or nombreMateria == "Vainilla":
                             idMedida = 3
                         elif nombreMateria == "Huevo":
                             idMedida = 1
@@ -511,7 +514,7 @@ def inventario():
                     gramos_ajustados -= (float(cantidad) * float(valor_unidad) * float(porcentaje_cascara) / 100)
                     if float(valor_unidad) != 0:
                         porcentaje = float((gramos_ajustados / (float(valor_unidad) * 50)) * 100)
-                        if nombreMateria in ingredientes_liquidos:
+                        if nombreMateria == "Leche" or nombreMateria == "Vainilla":
                             idMedida = 3
                         elif nombreMateria == "Huevo":
                             idMedida = 1
@@ -552,9 +555,9 @@ def inventario():
                             db.session.rollback()
                             flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
                 else:
-                    gramos_ajustados = valor_unidad * (float(cantidad) * float(valor_unidad))
-                    if nombreMateria in ingredientes_liquidos:
-                        idMedida = 3
+                    gramos_ajustados = valor_unidad * (float(cantidad))
+                    if nombreMateria == "Leche" or nombreMateria == "Vainilla":
+                            idMedida = 3
                     elif nombreMateria == "Huevo":
                         idMedida = 1
                     else:
@@ -601,7 +604,7 @@ def inventario():
     
 
     materias_primas = MateriaPrima.query.all()
-    detalle_primas = Detalle_materia_prima.query.all()
+    detalle_primas = Detalle_materia_prima.query.filter_by(estatus=1).all()
     print("Detalle Prima", detalle_primas)
     proveedores = Proveedor.query.all()
     medida = Medida.query.all()
@@ -666,7 +669,6 @@ def editar_inventario():
     id_materiaPrima = request.form.get('editIdMateria')
     if request.method == 'POST':
         nombreMateria = inventario.nombre.data
-        print("Nombre Materia",nombreMateria)
         precio = inventario.precio.data
         cantidad = inventario.cantidad.data
         tipo_compra = request.form.get('tipo_compraEdit')
@@ -746,7 +748,6 @@ def editar_inventario():
 
                         gramos_ajustados = float(cantidad) * float(campoKilosBulto) - (float(cantidad) * float(campoKilosBulto) * float(porcentaje_cascara) / 100)
                         porcentaje = float((kilos_ajustados/float(valor_unidad*50))*100)
-                        flash("Kilos ajustados" , kilos_ajustados)
                         if nombreMateria in ingredientes_liquidos:
                             idMedida = 3
                         elif nombreMateria == "Huevo":
@@ -770,7 +771,7 @@ def editar_inventario():
                                 db.session.rollback()
                                 flash("Error al actualizar la materia prima en la base de datos: " + str(e))
                         else:
-                            flash("La materia prima con el ID proporcionado no existe en la base de datos.")
+                            flash("La materia prima proporcionado no existe en la base de datos.")
 
                         detalle_existente = Detalle_materia_prima.query.filter_by(idMateriaPrima=id_materiaPrima).first()
 
@@ -783,7 +784,7 @@ def editar_inventario():
 
                             try:
                                 db.session.commit()
-                                flash("Detalle de materia prima actualizado correctamente.")
+                                print("Detalle de materia prima actualizado correctamente.")
                             except Exception as e:
                                 db.session.rollback()
                                 flash("Error al actualizar el detalle de materia prima en la base de datos: " + str(e))
@@ -812,7 +813,7 @@ def editar_inventario():
                                 flash("Materia prima actualizada correctamente.")
                             except Exception as e:
                                 db.session.rollback()
-                                flash("Error al actualizar la materia prima en la base de datos: " + str(e))
+                                print("Error al actualizar la materia prima en la base de datos: " + str(e))
                         else:
                             flash("La materia prima con el ID proporcionado no existe en la base de datos.")
 
@@ -822,18 +823,17 @@ def editar_inventario():
 
                             detalle_existente.fechaCompra = fechaCom
                             detalle_existente.fechaVencimiento = fechaVen
-                            detalle_existente.cantidadExistentes = gramos_ajustados
+                            detalle_existente.cantidadExistentes = kilos_ajustados
                             detalle_existente.porcentaje = porcentaje
 
                             try:
                                 db.session.commit()
-                                flash("Detalle de materia prima actualizado correctamente.")
+                                print("Detalle de materia prima actualizado correctamente.")
                             except Exception as e:
                                 db.session.rollback()
                                 flash("Error al actualizar el detalle de materia prima en la base de datos: " + str(e))
                         else:
                             flash("El detalle de materia prima correspondiente al ID proporcionado no existe en la base de datos.")
-                        flash("Kilos ajustados" , kilos_ajustados)
                 else:
                     flash("Este ingrediente no puede ser encontrado.")
             else:
@@ -848,7 +848,7 @@ def editar_inventario():
                         datos_de_porcentaje = (datos_sin_porcentaje * float(porcentaje_cascara) / 100)
                         gramos_ajustados =datos_sin_porcentaje - datos_de_porcentaje
                         porcentaje = float((gramos_ajustados/float(valor_unidad*50))*100)
-                        if nombreMateria in ingredientes_liquidos:
+                        if nombreMateria == "Leche" or nombreMateria == "Vainilla":
                             idMedida = 3
                         elif nombreMateria == "Huevo":
                             idMedida = 1
@@ -892,7 +892,7 @@ def editar_inventario():
                             flash("El detalle de materia prima correspondiente al ID proporcionado no existe en la base de datos.")
                     else:
                         gramos_ajustados = valor_unidad * (float(cantidad) * float(valor_unidad))
-                        if nombreMateria in ingredientes_liquidos:
+                        if nombreMateria == "Leche" or nombreMateria == "Vainilla":
                             idMedida = 3
                         elif nombreMateria == "Huevo":
                             idMedida = 1
@@ -946,8 +946,8 @@ def editar_inventario():
                     porcentaje_cascara = [porcentaje for nombre, porcentaje in ingredientes_con_cascara_porcentaje if nombre == nombreMateria][0]
                     gramos_ajustados -= (float(cantidad) * float(valor_unidad) * float(porcentaje_cascara) / 100)
                     porcentaje = float((gramos_ajustados/float(valor_unidad*50))*100)
-                    if nombreMateria in ingredientes_liquidos:
-                        idMedida = 3
+                    if nombreMateria == "Leche" or nombreMateria == "Vainilla":
+                            idMedida = 3
                     elif nombreMateria == "Huevo":
                         idMedida = 1
                     else:
@@ -989,9 +989,9 @@ def editar_inventario():
                     else:
                         flash("El detalle de materia prima correspondiente al ID proporcionado no existe en la base de datos.")
                 else:
-                    gramos_ajustados = valor_unidad * (float(cantidad) * float(valor_unidad))
-                    if nombreMateria in ingredientes_liquidos:
-                        idMedida = 3
+                    gramos_ajustados = valor_unidad * (float(cantidad))
+                    if nombreMateria == "Leche" or nombreMateria == "Vainilla":
+                            idMedida = 3
                     elif nombreMateria == "Huevo":
                         idMedida = 1
                     else:
@@ -1043,11 +1043,26 @@ def editar_inventario():
 @app.route("/eliminar_inventario", methods=['POST'])
 @login_required
 def eliminar_inventario():
+    id_materia_prima = int(request.form.get("idMateriaPrima"))
     id_detalle_prima = int(request.form.get("idDetallePrima"))
+    cantidad_merma = float(request.form.get("cantidadE"))
     detalle_prima = Detalle_materia_prima.query.get(id_detalle_prima)
+    print("ID MATERIA PRIMA: ", id_materia_prima)
+    print("ID DETALLE PRIMA: ", id_detalle_prima)
+    print("CANTIDAD MERMA: ", cantidad_merma)
+    print("DETALLE PRIMA: ", detalle_prima)
+    
     
     if detalle_prima:
         detalle_prima.estatus = 0
+        db.session.commit()
+
+        nueva_merma = merma_inventario(
+                        cantidadMerma=cantidad_merma,
+                        idMateriaPrima=id_materia_prima,
+                        idDetalle_materia_prima=id_materia_prima
+                    )
+        db.session.add(nueva_merma)
         db.session.commit()
         mensaje = "Materia prima y detalle eliminados correctamente."
         flash(mensaje)
@@ -1055,7 +1070,7 @@ def eliminar_inventario():
         mensaje = "Materia prima o detalle no encontrados."
         flash(mensaje)
     
-    return redirect(url_for('proveedor'))
+    return redirect(url_for('inventario'))
 
 @app.route("/registrar_merma", methods=['POST'])
 @login_required
@@ -1064,10 +1079,12 @@ def registrar_merma():
     cantidad_merma = 0
     merma = forms.InventarioForm(request.form)
     if request.method == 'POST':
-        id_detalle_prima = int(request.form.get("idDetalle"))
-        cantidad_merma = float(merma.cantidad.data)
+        #id_detalle_prima = int(request.form.get("idDetalle"))
+        id_materia = int(request.form.get("idMateria"))
+        cantidad_merma = float(merma.merma.data)
+        print("ID MATERIA : ", id_materia)
 
-        detalle_prima = Detalle_materia_prima.query.get(id_detalle_prima)
+        detalle_prima = Detalle_materia_prima.query.get(id_materia)
 
         if detalle_prima:
             cantidad_existente = detalle_prima.cantidadExistentes
@@ -1076,9 +1093,10 @@ def registrar_merma():
                 detalle_prima.cantidadExistentes -= cantidad_merma
                 db.session.commit()
 
-                nueva_merma = mermaInventario(
+                nueva_merma = merma_inventario(
                         cantidadMerma=cantidad_merma,
-                        idMateriaPrima=id_detalle_prima
+                        idMateriaPrima=id_materia,
+                        idDetalle_materia_prima=id_materia
                     )
                 db.session.add(nueva_merma)
                 db.session.commit()
@@ -1548,8 +1566,8 @@ def obtener_compras_y_grafica(tipo_busqueda=None, fecha_seleccionada=None):
     for compra in compras:
         compra.materia_prima = MateriaPrima.query.get(compra.idMateriaPrima)
     
-    # Obtener mermas de cada materia prima dentro del rango de fechas
-    mermas = mermaInventario.query.all()
+    # Obtener mermas de cada materia prima
+    mermas = merma_inventario.query.all()
     mermas_dict = {}
     for merma in mermas:
         if merma.idMateriaPrima not in mermas_dict:
@@ -1925,6 +1943,7 @@ def pv_galleta():
         descontar_cantidad_producto(id_producto, cantidad)
 
     db.session.commit()
+    flash("Venta Generada,success")
 
     return generar_pdf(datosPy,fecha,user,empresa)
 
@@ -1957,6 +1976,7 @@ def pv_galleta_Sin_Ticket():
         descontar_cantidad_producto(id_producto, cantidad)
 
     db.session.commit()
+    flash("Venta Generada,success")
 
     return redirect(url_for('punto_de_venta'))
 
