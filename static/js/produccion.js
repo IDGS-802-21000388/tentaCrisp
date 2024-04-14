@@ -58,3 +58,38 @@ function confirmarAccion(idProducto, fechaVencimiento, accion) {
         }
     });
 }
+
+function seleccionarProducto(btn) {
+    var idProducto = btn.getAttribute('data-idProducto');
+    var cantidadProduccion = btn.getAttribute('data-cantidadProduccion');
+    var nombreProducto = btn.getAttribute('data-nombreProducto');
+    var idSolicitud = btn.getAttribute('data-idSolicitud');
+    
+    document.getElementById('txtIdProducto').value = idProducto;
+    document.getElementById('nombreProducir').value = nombreProducto;
+    document.getElementById('cantidadProducir').value = cantidadProduccion;
+    document.getElementById('productoSeleccionado').value = idSolicitud;
+    
+    
+    var modal = new bootstrap.Modal(document.getElementById('modalProducir'));
+    modal.show();
+}
+
+function terminarProduccion(btn) {
+    console.log(btn);
+    var idProducto = btn.getAttribute('data-idProducto');
+    var cantidadProduccion = btn.getAttribute('data-cantidadProduccion');
+    var nombreProducto = btn.getAttribute('data-nombreProducto');
+    var idSolicitud = btn.getAttribute('data-idSolicitud');
+    document.getElementById('productoSeleccionadoProd').value = idSolicitud;
+    document.getElementById('txtIdProductoProd').value = idProducto;
+    document.getElementById('cantidadProducirProd').value = cantidadProduccion;
+    document.getElementById('nombreProducirProd').value = nombreProducto;
+    
+    var modal = new bootstrap.Modal(document.getElementById('modalTerminarProduccion'));
+    modal.show();
+    /*document.getElementById('productoSeleccionado').value = idProducto;
+    document.getElementById('formProducir').style.display = 'block';
+    document.getElementById('formProducir').submit(); */
+} 
+

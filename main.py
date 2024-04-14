@@ -2,7 +2,7 @@ from flask import Flask, request, render_template, flash, g, redirect, url_for, 
 from flask_wtf.csrf import CSRFProtect
 from config import DevelopmentConfig
 import forms, ssl, base64, json, re
-from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, Detalle_materia_prima, Medida, mermaInventario ,LogsUser, Venta, DetalleVenta, Detalle_materia_prima, Detalle_producto, Proveedor, Merma
+from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, Detalle_materia_prima, Medida, mermaInventario ,LogsUser, Venta, DetalleVenta, Detalle_materia_prima, Detalle_producto, Proveedor, Merma, solicitudProduccion
 import forms, ssl, base64, json, re, html2text
 from sqlalchemy import func , and_
 from functools import wraps
@@ -1319,9 +1319,28 @@ def eliminar_producto():
 @produccion_required
 def producir():
     if request.method == 'POST':
+        id_solicitud = request.form.get('productoSeleccionado')
+        if id_solicitud:
+            solicitud = solicitudProduccion.query.get(id_solicitud)
+            if solicitud:
+                solicitud.estatus = 2
+                db.session.commit()
+                flash('Comenzó con la producción de la galleta', 'success')
+                return redirect(url_for('productos'))
+            else:
+                return 'La solicitud de producción no existe', 404
+        else:
+            return 'ID de solicitud no proporcionado en el formulario', 400
+
+@app.route('/terminar_produccion', methods=['POST'])
+@login_required
+@produccion_required
+def terminar_produccion():
+    if request.method == 'POST':
+        print(request.form)
         cantidadProduccion = 40
         cantidadMerma = int(request.form.get('cantidadMerma')) if request.form.get('cantidadMerma') else 0
-        idProducto = int(request.form.get('productoSeleccionado')) if request.form.get('productoSeleccionado') else 0
+        idProducto = int(request.form.get('txtIdProductoProd')) if request.form.get('txtIdProductoProd') else 0
         fechaVencimiento = request.form.get('fechaVencimiento') if request.form.get('fechaVencimiento') else 0
 
         if idProducto == 0 or fechaVencimiento == 0:
@@ -1334,14 +1353,15 @@ def producir():
         )
         db.session.add(detalle_producto)
         db.session.commit()
-
-        merma = Merma(
-            cantidadMerma=cantidadMerma,
-            idProducto=idProducto,
-            idDetalle_producto=detalle_producto.idDetalle_producto
-        )        
-        db.session.add(merma)
-        db.session.commit()
+        if cantidadMerma != 0:
+            merma = Merma(
+                cantidadMerma=cantidadMerma,
+                fechaMerma = datetime.now(),
+                idProducto=idProducto,
+                idDetalle_producto=detalle_producto.idDetalle_producto
+            )        
+            db.session.add(merma)
+            db.session.commit()
 
         receta = Receta.query.filter_by(idProducto=idProducto).first()
         if receta:
@@ -1357,6 +1377,12 @@ def producir():
                     flash(f'No se encontró ingriendientes en existencia para {materia_prima.nombreMateria}', 'error')
                     return redirect(url_for('productos'))
             flash('La galletas se han horneado!', 'success')
+            id_solicitud = request.form.get('productoSeleccionadoProd')
+            if id_solicitud:
+                solicitud = solicitudProduccion.query.get(id_solicitud)
+                if solicitud:
+                    solicitud.estatus = 3
+                    db.session.commit()
             return redirect(url_for('productos'))
     else:
         flash('No se recibió una solicitud POST', 'error')
@@ -1395,20 +1421,24 @@ def eliminar_logica_produccion():
 @login_required
 def productos():
     productos = []
-    products_activos = []
-    producto_dict = {}
+    products = []
 
-    productos_activos = Producto.query.filter_by(estatus=1).all()
-    for producto in productos_activos:
-        producto_dict = {
-            'idProducto': producto.idProducto,
-            'nombreProducto': producto.nombreProducto,
-            'precioProduccion': producto.precioProduccion,
-            'precioVenta': producto.precioVenta,
-            'fotografia': producto.fotografia,
-        }
-    if len(producto_dict) > 0:
-        products_activos.append(producto_dict)
+    solicitudes = solicitudProduccion.query.filter(solicitudProduccion.estatus.in_([1, 2])).all()
+    for solicitud in solicitudes:
+        product = Producto.query.filter_by(idProducto=solicitud.idProducto).first()
+        
+        if product:
+            products.append({
+                'idSolicitud': solicitud.idSolicitud,
+                'idProducto': product.idProducto,
+                'nombreProducto': product.nombreProducto,
+                'cantidadProduccion': solicitud.cantidadProduccion,
+                'precioVenta': product.precioVenta,
+                'precioProduccion': product.precioProduccion,
+                'idMedida': product.idMedida,
+                'fotografia': product.fotografia,
+                'estatus': solicitud.estatus
+            }) 
 
     productos_detalle = db.session.query(Producto, Detalle_producto).outerjoin(Detalle_producto, Producto.idProducto == Detalle_producto.idProducto).filter(Producto.estatus == 1).all()
     productos_detalle_filtrados = [(producto, detalle) for producto, detalle in productos_detalle if detalle is not None]
@@ -1446,7 +1476,7 @@ def productos():
 
         productos.append(producto_dict)
 
-    return render_template('productos.html', productos=productos, products=products_activos)
+    return render_template('productos.html', productos=productos, products=products)
 
 def getAllIngredientes():
     ingredientes = MateriaPrima.query.all()
