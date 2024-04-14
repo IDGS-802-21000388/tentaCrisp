@@ -1843,8 +1843,6 @@ def calcular_total_compras():
 
     return total_compras
 
-
-
 @app.route('/ventas', methods=['GET', 'POST'])
 @admin_required
 @login_required
@@ -2127,11 +2125,6 @@ def calcular_total_compras(fecha_inicio=None, fecha_fin=None):
     
     return total_compras
 
-
-
-
-
-
 @app.route('/punto_de_venta')
 @login_required
 @ventas_required
@@ -2149,9 +2142,7 @@ def pv_galleta():
     datos = request.form.get('datos2')
     user = request.form.get('user')
     empresa = 'TentaCrisp'
-    print(datos)
     datosPy = json.loads(datos)
-    print(datosPy)
     cantidad = 0
 
     total = calcular_total(datosPy)
