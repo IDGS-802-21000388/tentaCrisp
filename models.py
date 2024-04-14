@@ -60,6 +60,12 @@ class Detalle_materia_prima(db.Model):
     idMateriaPrima = db.Column(db.Integer, db.ForeignKey('materia_prima.idMateriaPrima'))
     porcentaje = db.Column(db.Integer, nullable=False, default=100)
     estatus = db.Column(db.Integer, nullable=False, default=1)
+    
+class Compra(db.Model):
+    idCompra = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    idMateriaPrima = db.Column(db.Integer, db.ForeignKey('materia_prima.idMateriaPrima'))
+    idDetalle_materia_prima=db.Column(db.Integer, db.ForeignKey('detalle_materia_prima.idDetalle_materia_prima'))
+    cantidadExistentes = db.Column(db.Float, nullable=False, default=0.0)
 
 class Producto(db.Model):
     idProducto = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -84,6 +90,7 @@ class Detalle_producto(db.Model):
 class Merma(db.Model):
     idMerma = db.Column(db.Integer, primary_key=True, autoincrement=True)
     cantidadMerma= db.Column(db.Float, nullable=False, default=0.0)
+    fechaMerma = db.Column(db.DateTime)
     idProducto = db.Column(db.Integer, db.ForeignKey('producto.idProducto'))
     idDetalle_producto = db.Column(db.Integer, db.ForeignKey('detalle_producto.idDetalle_producto'))
 
@@ -135,5 +142,7 @@ class Movimiento(db.Model):
 
 class solicitudProduccion(db.Model):
     idSolicitud = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    cantidadProduccion= db.Column(db.Integer, nullable=False, default=1)
     fechaSolicitud = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     idProducto = db.Column(db.Integer, db.ForeignKey('producto.idProducto'))
+    estatus = db.Column(db.Integer, nullable=False, default=1)

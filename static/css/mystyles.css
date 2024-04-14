@@ -54,7 +54,7 @@
 
 .table-hover tbody tr:hover {
     background-color: #f1c896 !important;
-    color: #fff !important;
+    color: black !important;
 }
 
 a.page-link[tabindex="0"] {

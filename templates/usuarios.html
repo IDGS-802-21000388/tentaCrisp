@@ -54,9 +54,11 @@
                                 <form class="needs-validation" action="{{ url_for('usuarios') }}" method="POST" >
                                     {{ form.csrf_token }}
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                    <div id="passwordWarning" class="alert alert-danger" >
+                                    <div class="bg-light text-danger p-3 mb-3 rounded border border-danger">
+                                        <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i> <!-- Icono de advertencia -->
                                         La contraseña debe tener al menos una mayúscula, una minúscula, un número, un carácter especial y tener una longitud mínima de 8 caracteres.
                                     </div>
+                                    
                                     <div class="row">
                                         <div class="col">
                                             {{ render_field(form.nombre, class="form-control") }}
@@ -105,7 +107,8 @@
                                     {{ form.csrf_token }}
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input  type="hidden" id="editIdUsuario" name="editIdUsuario">
-                                    <div id="passwordWarning" class="alert alert-danger" >
+                                    <div class="bg-light text-danger p-3 mb-3 rounded border border-danger">
+                                        <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i> <!-- Icono de advertencia -->
                                         La contraseña debe tener al menos una mayúscula, una minúscula, un número, un carácter especial y tener una longitud mínima de 8 caracteres.
                                     </div>
                                     <div class="row">
