@@ -3,11 +3,12 @@ $(document).ready(function() {
         var cantidadPorcion = $('#txtCantidadPorcion').val();
         var ingredienteSeleccionado = $('#txtIngredientes option:selected').text();
         var idIngredienteSeleccionado = $('#txtIngredientes option:selected').attr('id');
+        var medidaIngredienteSeleccionado = $('#txtIngredientes option:selected').attr('medida');
                 
         var newRow = `<tr>
                         <input type="hidden" name="ingredientes_${idIngredienteSeleccionado}" id="${idIngredienteSeleccionado}" value="${cantidadPorcion}">
                         <td value="${ingredienteSeleccionado}" id="${idIngredienteSeleccionado}"> ${ingredienteSeleccionado} </td>
-                        <td> ${cantidadPorcion} gramos </td>
+                        <td> ${cantidadPorcion} ${medidaIngredienteSeleccionado} </td>
                         <td><button id="${idIngredienteSeleccionado}" class="btnEliminar"><i class="fa-solid fa-trash" style="color: #c12525;"></i></button></td>
                     </tr>`;
         $('#tbodyIngredientes').append(newRow);  

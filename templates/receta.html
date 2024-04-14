@@ -144,13 +144,12 @@
                                             <input type="text" id="txtIdProducto" class="form-control"
                                                 style="display: none">
                                             <label for="txtIngredientesEditar" class="form-label">Ingredientes:</label>
-                                            <label style="margin-left: 55%;" class="form-label">Cantidad de porción en
-                                                gramos:</label>
+                                            <label style="margin-left: 55%;" class="form-label">Cantidad de porción:</label>
                                             <div class="d-flex">
                                                 <select id="txtIngredientes" name="ingrediente" class="form-select"
                                                     aria-label="Default select example">
                                                     {% for ingrediente in ingredientes %}
-                                                    <option id="{{ ingrediente.idMateriaPrima }}"
+                                                    <option medida="{{ingrediente.tipoMedida}}" id="{{ ingrediente.idMateriaPrima }}"
                                                         value="{{ ingrediente.idMateriaPrima }}">{{
                                                         ingrediente.nombreMateria }}</option>
                                                     {% endfor %}

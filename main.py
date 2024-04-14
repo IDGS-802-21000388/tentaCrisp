@@ -1594,7 +1594,26 @@ def productos():
     return render_template('productos.html', productos=productos, products=products)
 
 def getAllIngredientes():
-    ingredientes = MateriaPrima.query.all()
+    ingredientes = db.session.query(
+        MateriaPrima.idMateriaPrima,
+        MateriaPrima.nombreMateria,
+        MateriaPrima.precioCompra,
+        MateriaPrima.cantidad,
+        Medida.tipoMedida
+    ).join(
+        Medida, MateriaPrima.idMedida == Medida.idMedida
+    ).all()
+
+    ingredientes_json = []
+    for ingrediente in ingredientes:
+        ingrediente_dict = {
+            'idMateriaPrima': ingrediente.idMateriaPrima,
+            'nombreMateria': ingrediente.nombreMateria,
+            'precioCompra': ingrediente.precioCompra,
+            'cantidad': ingrediente.cantidad,
+            'tipoMedida': ingrediente.tipoMedida
+        }
+        ingredientes_json.append(ingrediente_dict)
     return ingredientes
 
 password_pattern = re.compile(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$')
