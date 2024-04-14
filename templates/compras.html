@@ -2,60 +2,70 @@
 {% from "_macros.html" import render_field %}
 
 {% block content %}
-<h1>Compras</h1>
+<div class="container">
+    <h1 class="mt-5">Compras</h1>
+    <form id="ventas-form" method="post" class="mt-3">
+        {{ form.csrf_token }}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="tipo_seleccion">Seleccionar tipo de compras:</label>
+                    {{ render_field(form.tipo_seleccion, class="form-control", id="tipo_seleccion") }}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="fecha">Seleccionar fecha:</label>
+                    {{ render_field(form.fecha, class="form-control", id="fecha") }}
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Mostrar Compras</button>
+    </form>
 
-<form id="ventas-form" method="post" class="mt-3">
-    {{ form.csrf_token }}
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-    <div class="form-group">
-      <label for="tipo_seleccion">Seleccionar tipo de compras:</label>
-      {{ render_field(form.tipo_seleccion, class="form-control", id="tipo_seleccion") }}
-    </div>
-    <div class="form-group">
-      <label for="fecha">Seleccionar fecha:</label>
-      {{ render_field(form.fecha, class="form-control", id="fecha") }}
-    </div>
-    <button type="submit" class="btn btn-primary">Mostrar Compras</button>
-  </form>
-    
-<div id="bodyTablaCompras">
-    <table id="tblCompras" class="table table-hover table-sm">
-        <thead>
-            <tr>
-                <th id="tblCabecera">Nombre</th>
-                <th id="tblCabecera">Fecha Compra</th>
-                <th id="tblCabecera">Fecha Vencimiento</th>
-                <th id="tblCabecera">Proveedor</th>
-                <th id="tblCabecera">Cantidad</th>
-                <th id="tblCabecera">Precio</th>
-                <th id="tblCabecera">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for compra in compras %}
+    <div id="bodyTablaCompras" class="mt-5">
+        <table id="tblCompras" class="table">
+            <thead>
                 <tr>
-                    <td>{{ compra.materia_prima.nombreMateria }}</td>
-                    <td>{{ compra.fechaCompra }}</td>
-                    <td>{{ compra.fechaVencimiento }}</td>
-                    <td>{{ compra.materia_prima.proveedor.nombreProveedor }}</td>
-                    <td>{{ compra.cantidadExistentes | float }}</td>
-                    <td>{{ compra.materia_prima.precioCompra | float }}</td>
-                    <td>{{ (compra.cantidadExistentes | float) * (compra.materia_prima.precioCompra | float) }}</td>
+                    <th>Nombre</th>
+                    <th>Fecha Compra</th>
+                    <th>Fecha Vencimiento</th>
+                    <th>Proveedor</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>Total</th>
                 </tr>
-            {% endfor %}
-        </tbody>
-        <tfoot>
-            <tr>
-                <td colspan="6" class="text-end"><strong>Total:</strong></td>
-                <td class="text-end"><strong id="total">0.00</strong></td>
-            </tr>
-        </tfoot>
-    </table>
+            </thead>
+            <tbody>
+                {% for compra in compras %}
+                    <tr>
+                        <td>{{ compra.materia_prima.nombreMateria }}</td>
+                        <td>{{ compra.fechaCompra }}</td>
+                        <td>{{ compra.fechaVencimiento }}</td>
+                        <td>{{ compra.materia_prima.proveedor.nombreProveedor }}</td>
+                        <td>{{ compra.cantidadExistentes | float }}</td>
+                        <td>{{ compra.materia_prima.precioCompra | float }}</td>
+                        <td>{{ (compra.cantidadExistentes | float) * (compra.materia_prima.precioCompra | float) }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="6" class="text-end"><strong>Total:</strong></td>
+                    <td class="text-end"><strong id="total">0.00</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="mt-5" id="grafica-container" style="display: none;">
+        <h2>Galletas más Vendidas</h2>
+        <img src="{{ img_url }}" alt="Gráfica de Compras" class="img-fluid">
+    </div>
+
+    <button onclick="toggleGrafica()" class="btn btn-primary mt-3">Mostrar/Ocultar Gráfica</button>
 </div>
-<div class="mt-5" id="grafica-container" style="display: none;">
-    <h2>Galletas más Vendidas</h2>
-    <img src="{{ img_url }}" alt="Gráfica de Compras">
-</div>
-<button onclick="toggleGrafica()" class="btn btn-primary mt-3">Mostrar/Ocultar Gráfica</button>
-<script src="../static/js/compras.js"></script>
+
+<script src="{{ url_for('static', filename='js/compras.js') }}"></script>
 {% endblock %}

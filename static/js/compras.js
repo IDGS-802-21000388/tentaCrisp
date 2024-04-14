@@ -7,15 +7,15 @@ $(document).ready(function() {
         language: {
             decimal: "",
             emptyTable: "No hay información",
-            info: "Mostrando START a END de TOTAL Entradas",
+            info: "Mostrando _START_ a _END_ de _TOTAL_ Entradas",
             infoEmpty: "Mostrando 0 Entradas",
             infoFiltered: "",
             infoPostFix: "",
             thousands: ",",
-            lengthMenu: "Mostrar MENU Entradas",
+            lengthMenu: "Mostrar   _MENU_  Entradas",
             loadingRecords: "Cargando...",
             processing: "Procesando...",
-            search: " ",
+            search: " ",
             searchPlaceholder: "Buscar",
             zeroRecords: "Sin resultados encontrados",
             paginate: {

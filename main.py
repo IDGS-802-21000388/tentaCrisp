@@ -2,7 +2,7 @@ from flask import Flask, request, render_template, flash, g, redirect, url_for, 
 from flask_wtf.csrf import CSRFProtect
 from config import DevelopmentConfig
 import forms, ssl, base64, json, re
-from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, Detalle_materia_prima, Medida, mermaInventario ,LogsUser, Venta, DetalleVenta, Detalle_materia_prima, Detalle_producto, Proveedor, Merma, solicitudProduccion
+from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, Detalle_materia_prima, Medida, mermaInventario ,LogsUser, Venta, DetalleVenta, Detalle_materia_prima, Detalle_producto, Proveedor, Merma, Compra, solicitudProduccion
 import forms, ssl, base64, json, re, html2text
 from sqlalchemy import func , and_
 from functools import wraps
@@ -380,9 +380,27 @@ def inventario():
                         try:
                             db.session.commit()
                             flash("Detalle de materia prima agregado correctamente.")
+                            ultimo_id_materia_prima = MateriaPrima.query.order_by(MateriaPrima.idMateriaPrima.desc()).first().idMateriaPrima
+                            ultimo_id_detalle_materia_prima = Detalle_materia_prima.query.order_by(Detalle_materia_prima.idDetalle_materia_prima.desc()).first().idDetalle_materia_prima
+
+                            nueva_compra = Compra(
+                                idMateriaPrima=ultimo_id_materia_prima,
+                                idDetalle_materia_prima=ultimo_id_detalle_materia_prima,
+                                cantidadExistentes=gramos_ajustados
+                            )
+
+                            db.session.add(nueva_compra)
+                            try:
+                                db.session.commit()
+                                flash("Detalle de compra agregado correctamente.")
+                            except Exception as e:
+                                db.session.rollback()
+                                flash("Error al agregar compra a la base de datos: " + str(e))
                         except Exception as e:
                             db.session.rollback()
                             flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
+                        
+                        
                     else:
                         gramos_ajustados = valor_unidad * (float(cantidad) * float(campoKilosBulto))
 
@@ -423,10 +441,28 @@ def inventario():
                         try:
                             db.session.commit()
                             flash("Detalle de materia prima agregado correctamente.")
+                            ultimo_id_materia_prima = MateriaPrima.query.order_by(MateriaPrima.idMateriaPrima.desc()).first().idMateriaPrima
+                            ultimo_id_detalle_materia_prima = Detalle_materia_prima.query.order_by(Detalle_materia_prima.idDetalle_materia_prima.desc()).first().idDetalle_materia_prima
+
+                            nueva_compra = Compra(
+                                idMateriaPrima=ultimo_id_materia_prima,
+                                idDetalle_materia_prima=ultimo_id_detalle_materia_prima,
+                                cantidadExistentes=gramos_ajustados
+                            )
+
+                            db.session.add(nueva_compra)
+                            try:
+                                db.session.commit()
+                                flash("Detalle de compra agregado correctamente.")
+                            except Exception as e:
+                                db.session.rollback()
+                                flash("Error al agregar compra a la base de datos: " + str(e))
                         except Exception as e:
                             db.session.rollback()
                             flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
-
+                        
+                        
+                        
                 else:
                     flash("Este ingrediente no puede ser encontrado.")
             else:
@@ -479,10 +515,29 @@ def inventario():
                         try:
                             db.session.commit()
                             flash("Detalle de materia prima agregado correctamente.")
+                            ultimo_id_materia_prima = MateriaPrima.query.order_by(MateriaPrima.idMateriaPrima.desc()).first().idMateriaPrima
+                            ultimo_id_detalle_materia_prima = Detalle_materia_prima.query.order_by(Detalle_materia_prima.idDetalle_materia_prima.desc()).first().idDetalle_materia_prima
+
+                            nueva_compra = Compra(
+                                idMateriaPrima=ultimo_id_materia_prima,
+                                idDetalle_materia_prima=ultimo_id_detalle_materia_prima,
+                                cantidadExistentes=gramos_ajustados
+                            )
+
+                            db.session.add(nueva_compra)
+                            try:
+                                db.session.commit()
+                                flash("Detalle de compra agregado correctamente.")
+                            except Exception as e:
+                                db.session.rollback()
+                                flash("Error al agregar compra a la base de datos: " + str(e))
                         except Exception as e:
                             db.session.rollback()
                             flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
 
+                        
+                        
+                            
                     else:
                         gramos_ajustados = valor_unidad * (float(cantidad) * float(valor_unidad))
                         if nombreMateria in ingredientes_liquidos:
@@ -522,9 +577,29 @@ def inventario():
                         try:
                             db.session.commit()
                             flash("Detalle de materia prima agregado correctamente.")
+                            ultimo_id_materia_prima = MateriaPrima.query.order_by(MateriaPrima.idMateriaPrima.desc()).first().idMateriaPrima
+                            ultimo_id_detalle_materia_prima = Detalle_materia_prima.query.order_by(Detalle_materia_prima.idDetalle_materia_prima.desc()).first().idDetalle_materia_prima
+
+                            nueva_compra = Compra(
+                                idMateriaPrima=ultimo_id_materia_prima,
+                                idDetalle_materia_prima=ultimo_id_detalle_materia_prima,
+                                cantidadExistentes=gramos_ajustados
+                            )
+
+                            db.session.add(nueva_compra)
+                            try:
+                                db.session.commit()
+                                flash("Detalle de compra agregado correctamente.")
+                            except Exception as e:
+                                db.session.rollback()
+                                flash("Error al agregar compra a la base de datos: " + str(e))
                         except Exception as e:
                             db.session.rollback()
                             flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
+                        
+                        
+                        
+                            
                 else:
                     flash("Este ingrediente no puede ser encontrado.")
             else:
@@ -575,11 +650,31 @@ def inventario():
                         try:
                             db.session.commit()
                             flash("Detalle de materia prima agregado correctamente.")
+                            ultimo_id_materia_prima = MateriaPrima.query.order_by(MateriaPrima.idMateriaPrima.desc()).first().idMateriaPrima
+                            ultimo_id_detalle_materia_prima = Detalle_materia_prima.query.order_by(Detalle_materia_prima.idDetalle_materia_prima.desc()).first().idDetalle_materia_prima
+
+                            nueva_compra = Compra(
+                                idMateriaPrima=ultimo_id_materia_prima,
+                                idDetalle_materia_prima=ultimo_id_detalle_materia_prima,
+                                cantidadExistentes=gramos_ajustados
+                            )
+
+                            db.session.add(nueva_compra)
+                            try:
+                                db.session.commit()
+                                flash("Detalle de compra agregado correctamente.")
+                            except Exception as e:
+                                db.session.rollback()
+                                flash("Error al agregar compra a la base de datos: " + str(e))
                         except Exception as e:
                             db.session.rollback()
                             flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
+                            
+                        
+                        
+                            
                 else:
-                    gramos_ajustados = valor_unidad * (float(cantidad) * float(valor_unidad))
+                    gramos_ajustados = valor_unidad * (float(cantidad))
                     if nombreMateria in ingredientes_liquidos:
                         idMedida = 3
                     elif nombreMateria == "Huevo":
@@ -617,9 +712,29 @@ def inventario():
                     try:
                         db.session.commit()
                         flash("Detalle de materia prima agregado correctamente.")
+                        ultimo_id_materia_prima = MateriaPrima.query.order_by(MateriaPrima.idMateriaPrima.desc()).first().idMateriaPrima
+                        ultimo_id_detalle_materia_prima = Detalle_materia_prima.query.order_by(Detalle_materia_prima.idDetalle_materia_prima.desc()).first().idDetalle_materia_prima
+
+                        nueva_compra = Compra(
+                                idMateriaPrima=ultimo_id_materia_prima,
+                                idDetalle_materia_prima=ultimo_id_detalle_materia_prima,
+                                cantidadExistentes=gramos_ajustados
+                            )
+
+                        db.session.add(nueva_compra)
+                        try:
+                            db.session.commit()
+                            flash("Detalle de compra agregado correctamente.")
+                        except Exception as e:
+                            db.session.rollback()
+                            flash("Error al agregar compra a la base de datos: " + str(e))
                     except Exception as e:
                         db.session.rollback()
                         flash("Error al agregar el detalle de materia prima a la base de datos: " + str(e))
+                        
+                    
+                        
+                            
             else:
                 
                 flash("Este ingrediente no puede ser comprado por unidad.")
@@ -1581,35 +1696,35 @@ def cambiar_estado_usuario(id_usuario):
 
     return redirect(url_for('usuarios'))
 
-@app.route('/compras')
+@app.route('/compras', methods=['POST', 'GET'])
 @login_required
 @produccion_required
 def mostrar_compras():
-    form = forms.ComprasForm()  # Crear una instancia del formulario de compras
+    form = forms.ComprasForm()
 
     if request.method == 'POST' and form.validate():
         tipo_busqueda = form.tipo_seleccion.data
         fecha_seleccionada = form.fecha.data
         compras, img_url = obtener_compras_y_grafica(tipo_busqueda, fecha_seleccionada)
+        if not compras:
+            flash("No hay compras para la fecha seleccionada.", "warning")
+            return render_template('compras.html', form=form)
         return render_template('compras.html', form=form, compras=compras, img_url=img_url)
 
-    # Si la solicitud es GET o el formulario no es válido, mostrar todas las compras
     compras, img_url = obtener_compras_y_grafica()
+    if not compras:
+        flash("No hay compras disponibles.", "warning")
+        return render_template('compras.html', form=form)
     return render_template('compras.html', form=form, compras=compras, img_url=img_url)
 
 
 def obtener_compras_y_grafica(tipo_busqueda=None, fecha_seleccionada=None):
-    # Obtener el rango de fechas según el tipo de búsqueda
     fecha_inicio, fecha_fin = calcular_rango_fechas(tipo_busqueda, fecha_seleccionada)
 
-    # Filtrar las compras por el rango de fechas
     compras = Detalle_materia_prima.query.filter(Detalle_materia_prima.fechaCompra.between(fecha_inicio, fecha_fin)).all()
-
-    # Obtener instancias de MateriaPrima correspondientes a cada compra
     for compra in compras:
         compra.materia_prima = MateriaPrima.query.get(compra.idMateriaPrima)
     
-    # Obtener mermas de cada materia prima dentro del rango de fechas
     mermas = mermaInventario.query.all()
     mermas_dict = {}
     for merma in mermas:
@@ -1618,7 +1733,6 @@ def obtener_compras_y_grafica(tipo_busqueda=None, fecha_seleccionada=None):
         else:
             mermas_dict[merma.idMateriaPrima] += merma.cantidadMerma
 
-    # Crear un DataFrame de Pandas con los datos de compras y mermas
     data = []
     for compra in compras:
         nombre = compra.materia_prima.nombreMateria
@@ -1627,25 +1741,27 @@ def obtener_compras_y_grafica(tipo_busqueda=None, fecha_seleccionada=None):
         data.append([nombre, cantidad_comprada, cantidad_merma])
     
     df = pd.DataFrame(data, columns=['Nombre', 'Compras', 'Merma'])
-    
-    # Consolidar las compras y mermas para cada materia prima
     df = df.groupby('Nombre').sum().reset_index()
 
-    # Generar la gráfica utilizando Pandas
-    plt = df.plot(x='Nombre', kind='bar', stacked=True, figsize=(10, 6))
+    if df.empty:
+        return None, None  # Retorna None para compras y img_url si no hay datos
+
+    plt = df.plot(x='Nombre', kind='bar', stacked=True, figsize=(10, 6), color=['#A67C52', '#E77F34'])
     plt.set_xlabel('Materia Prima')
     plt.set_ylabel('Cantidad')
     plt.set_title('Compras y Merma de Materia Prima')
     plt.legend()
+    plt.grid(axis='y')
 
-    # Obtener el objeto de figura (Figure)
+    for p in plt.patches:
+        if p.get_height() > 0:
+            plt.annotate(str(int(p.get_height())), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='bottom')
+        else:
+            plt.annotate(str(int(p.get_height())), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='top')
+
     fig = plt.get_figure()
-
-    # Guardar la gráfica como un archivo de imagen
     img_path = os.path.join(app.root_path, 'static', 'img', 'compras.png')
     fig.savefig(img_path)
-
-    # Obtener la ubicación de la imagen para pasarla a la plantilla HTML
     img_url = url_for('static', filename='img/compras.png')
     
     return compras, img_url
@@ -1803,7 +1919,7 @@ def calcular_total_tipoventas(tipo_seleccion=None, fecha_seleccionada=None):
         df_ventas = pd.DataFrame(ventas_detalle, columns=['Producto', 'Cantidad', 'Subtotal', 'Fecha'])
         df_ventas_agrupado = df_ventas.groupby('Producto').agg({'Subtotal': 'sum', 'Cantidad': 'first'}).reset_index()
         df_ventas_agrupado = df_ventas_agrupado.sort_values(by='Subtotal', ascending=False).head(10)
-
+        
         base_color = '#dfb98b'  # Nuevo color base
         num_colors = len(df_ventas_agrupado)
         color_palette = [base_color]
@@ -1814,16 +1930,29 @@ def calcular_total_tipoventas(tipo_seleccion=None, fecha_seleccionada=None):
 
         colormap = ListedColormap(color_palette)
 
-        df_ventas_agrupado.plot(kind='bar', x='Producto', y='Subtotal', figsize=(10, 6), colormap=colormap)
-        plt.xlabel('Producto')
-        plt.ylabel('$ Total Ventas')
-        plt.title('Top 10 de Productos más Vendidos')
-        plt.xticks(rotation=45, ha='right')
+        # Generar la gráfica utilizando Pandas
+        ax = df_ventas_agrupado.plot(kind='bar', x='Producto', y='Subtotal', figsize=(10, 6), colormap=colormap)
+
+        # Añadir líneas en el eje Y
+        ax.grid(axis='y')
+
+        # Etiquetar cada barra con su valor correspondiente
+        for p in ax.patches:
+            if p.get_height() > 0:
+                ax.annotate(str(int(p.get_height())), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='bottom')
+            else:
+                ax.annotate(str(int(p.get_height())), (p.get_x() + p.get_width() / 2., p.get_height()), ha='center', va='top')
+
+        ax.set_xlabel('Producto')  # Corregido
+        ax.set_ylabel('$ Total Ventas')  # Corregido
+        ax.set_title('Top 10 de Productos más Vendidos')  # Corregido
+        ax.set_xticklabels(df_ventas_agrupado['Producto'], rotation=45, ha='right')  # Corregido
         plt.tight_layout()
         plt.savefig('static/top_10_productos_mas_vendidos.png')
         plt.close()
 
     return total_ventas, ventas_detalle, df_ventas_agrupado
+
 
 @app.route('/ganancias', methods=['GET', 'POST'])
 @login_required
@@ -1940,7 +2069,27 @@ def calcular_total_compras(fecha_inicio=None, fecha_fin=None):
     else:
         total_compras = db.session.query(func.sum(Detalle_materia_prima.cantidadExistentes * MateriaPrima.precioCompra)).join(MateriaPrima).scalar()
 
-    return total_compras if total_compras is not None else 0.0
+    if total_compras is None:
+        total_compras = 0.0
+
+    print("Total de compras:", total_compras)
+
+    total_merma_galleta = 0.0
+    productos = db.session.query(Producto.idProducto).all()
+
+    for producto in productos:
+        id_producto = producto[0]
+        merma_producto = db.session.query(func.sum(Merma.cantidadMerma * Producto.precioVenta)).join(Producto, Merma.idProducto == Producto.idProducto).filter(Producto.idProducto == id_producto).scalar()
+        if merma_producto is not None:
+            total_merma_galleta += merma_producto
+
+    print("Total de merma:", total_merma_galleta)
+
+    total_compras += total_merma_galleta
+    
+    return total_compras
+
+
 
 
 
