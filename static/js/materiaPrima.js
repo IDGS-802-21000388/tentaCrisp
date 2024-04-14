@@ -101,14 +101,41 @@ document.getElementById('btnVerUltimosIngredientes').addEventListener('click', f
 
 $(document).ready(function() {
     $('.btnMerma').click(function() {
-        var idDetalle = $(this).data('id');
-        console.log("Detalle" + idDetalle);
+        var idMateria = $(this).data('id');
+        var idDetalle = $(this).data('idD');
+        console.log("Detalle idDetalle " + idDetalle);
+        console.log("Detalle idMateria " + idMateria);
 
         $('#idDetalle').val(idDetalle);
+        $('#idMateria').val(idMateria);
         
         $('#modalMerma').modal('show');
     });
 });
+
+$(document).ready(function() {
+    $('.btnEditarMateria').click(function() {
+        var idDetalle = $(this).data('id');
+        var nombreProducto = $(this).data('nombreproducto');
+        var precioCompra = $(this).data('preciocompra');
+        var cantidad = $(this).data('cantidad');
+        var tipo = $(this).data('tipo');
+        var fechaCompra = $(this).data('fechacompra');
+        var fechaVencimiento = $(this).data('fechavencimiento');
+        var porcentaje = $(this).data('porcentaje');
+        var proveedor = $(this).data('proveedor');
+
+
+        $('#editIdMateria').val(idDetalle);
+        $('#editNombreProducto').val(nombreProducto);
+        $('#editPrecioCompra').val(precioCompra);
+        $('#editCantidad').val(cantidad);
+        $('#editFechaVencimiento').val(fechaVencimiento);
+        
+        $('#modalMateriaEditar').modal('show');
+    });
+});
+
 
 function clean(){
     document.getElementById("txtNombre").value = "";

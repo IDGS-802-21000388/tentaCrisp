@@ -32,7 +32,7 @@
                     <tr>
                         <th>Nombre Materia</th>
                         <th>Precio Compra</th>
-                        <th>Cantidad</th>
+                        <th>N. de Productos</th>
                         <th>Cantidad Existentes</th>
                         <th>Tipo</th>
                         <th>Fecha Compra</th>
@@ -66,6 +66,7 @@
                                 <i class="fa-solid fa-pen-to-square" style="color: #57351f;"></i>
                             </button>
                             <button class="btnMerma" data-id="{{ materia_prima.idMateriaPrima }}"
+                                data-idD="{{ detalle_prima.idDetalle_materia_prima }}"
                                 data-nombreProducto="{{ materia_prima.nombreMateria }}"
                                 data-precioCompra="{{ materia_prima.precioCompra }}"
                                 data-cantidad="{{ materia_prima.cantidad }}" data-tipo="{{ materia_prima.tipo }}"
@@ -76,7 +77,9 @@
                                 <i class="fa-solid fa-cloud-meatball"style="color: #57351f;"></i>
                             </button>
                             <form action="/eliminar_inventario" method="POST" style="display: inline;">
-                                <input type="hidden" name="idDetallePrima" value="{{ materia_prima.idMateriaPrima }}">
+                                <input type="hidden" name="idMateriaPrima" value="{{ materia_prima.idMateriaPrima }}">
+                                <input type="hidden" name="idDetallePrima" value="{{ detalle_prima.idDetalle_materia_prima }}">
+                                <input type="hidden" name="cantidadE" value="{{ detalle_prima.cantidadExistentes }}">
                                 <button type="submit"><i class="fa-solid fa-trash" style="color: #c12525;"></i></button>
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                             </form>
@@ -130,12 +133,12 @@
                                     </select>
 
                                     <div id="campo_extra_bulto" style="display: none;">
-                                        <label for="kilos">Kilos:</label>
+                                        <label for="kilos">Kilos que contiene:</label>
                                         <input type="text" id="kilos_bulto" name="kilos_bulto">
                                     </div>
 
                                     <div id="campo_extra_caja" style="display: none;">
-                                        <label for="numero_piezas">Kilos y/o Piezas:</label>
+                                        <label for="numero_piezas">Kilos y/o Piezas que contiene:</label>
                                         <input type="text" id="numero_piezas_caja" name="numero_piezas_caja">
                                     </div>
 
@@ -210,12 +213,12 @@
                                     </select>
 
                                     <div id="campo_extra_bulto_Edit" style="display: none;">
-                                        <label for="kilos">Kilos:</label>
+                                        <label for="kilos">Kilos que Contiene:</label>
                                         <input type="text" id="kilos_bulto_edit" name="kilos_bulto_edit">
                                     </div>
 
                                     <div id="campo_extra_caja_Edit" style="display: none;">
-                                        <label for="numero_piezas">Kilos y/o Piezas:</label>
+                                        <label for="numero_piezas">Kilos y/o Piezas que Contiene:</label>
                                         <input type="text" id="numero_piezas_caja_edit" name="numero_piezas_caja_edit">
                                     </div>
 
@@ -260,9 +263,10 @@
                         <div class="container">
                             <div class="row align-items-center">
                                 <input  type="hidden" id="idDetalle" name="idDetalle">
+                                <input  type="hidden" id="idMateria" name="idMateria" value="idMateria">
 
                                 <div id="materialPrima" class="col-8">
-                                    {{macro.render_field(form.cantidad,class="form-control")}}
+                                    {{macro.render_field(form.merma,class="form-control")}}
                                 </div>
                         </div>
                         </div>
