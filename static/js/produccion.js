@@ -76,7 +76,6 @@ function seleccionarProducto(btn) {
 }
 
 function terminarProduccion(btn) {
-    console.log(btn);
     var idProducto = btn.getAttribute('data-idProducto');
     var cantidadProduccion = btn.getAttribute('data-cantidadProduccion');
     var nombreProducto = btn.getAttribute('data-nombreProducto');
