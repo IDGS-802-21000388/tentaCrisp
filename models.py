@@ -46,7 +46,6 @@ class MateriaPrima(db.Model):
     nombreMateria = db.Column(db.String(45), nullable=False, default="")
     precioCompra = db.Column(db.Float, nullable=False, default=0.0)
     cantidad = db.Column(db.Float, nullable=False, default=0.0)
-    estatus = db.Column(db.Integer, nullable=False, default=1)
     idMedida = db.Column(db.Integer, db.ForeignKey('medida.idMedida'))
     idProveedor = db.Column(db.Integer, db.ForeignKey('proveedor.idProveedor'))
 
@@ -95,10 +94,12 @@ class Merma(db.Model):
     idProducto = db.Column(db.Integer, db.ForeignKey('producto.idProducto'))
     idDetalle_producto = db.Column(db.Integer, db.ForeignKey('detalle_producto.idDetalle_producto'))
 
-class mermaInventario(db.Model):
+class merma_inventario(db.Model):
     idMerma = db.Column(db.Integer, primary_key=True, autoincrement=True)
     cantidadMerma= db.Column(db.Float, nullable=False, default=0.0)
+    fechaMerma = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     idMateriaPrima = db.Column(db.Integer, db.ForeignKey('materia_prima.idMateriaPrima'))
+    idDetalle_materia_prima = db.Column(db.Integer, db.ForeignKey('detalle_materia_prima.idDetalle_materia_prima'))
 
 class Receta(db.Model):
     idReceta = db.Column(db.Integer, primary_key=True, autoincrement=True)

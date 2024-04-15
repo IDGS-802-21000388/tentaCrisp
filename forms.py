@@ -20,12 +20,13 @@ class UsuarioForm(FlaskForm):
 class InventarioForm(Form):
     nombre = StringField('Nombre',[validators.DataRequired(message='Favor de ingresar el nombre'),validators.length(min=1,max=40,message='Ingresa nombre valido')])
     precio = StringField('Precio Compra',[validators.DataRequired(message='Favor de ingresar el Precio'),validators.length(min=1,max=40,message='Ingresa nombre valido')])
-    cantidad = StringField('Cantidad',[validators.DataRequired(message='Favor de ingresar la cantidad'),validators.length(min=1,max=40,message='Ingresa cantidad valida')])
+    cantidad = StringField('No. de Productos Totales',[validators.DataRequired(message='Favor de ingresar la cantidad'),validators.length(min=1,max=40,message='Ingresa cantidad valida')])
     fechaVen = DateField('Fecha de Vencimiento', validators=[validators.DataRequired()])
     tipo_compra = SelectField('Tipo de compra', choices=[('bulto', 'Bulto'), ('caja', 'Caja'), ('paquete', 'Paquete'), ('unidad', 'Unidad')])
+    merma = StringField('Cantidad de Merma en Gramos',[validators.DataRequired(message='Favor de ingresar la cantidad'),validators.length(min=1,max=40,message='Ingresa cantidad valida')])
 
 class ProveedorForm(Form):
-    nombreProveedor = StringField('Nombre Proveedor', validators=[DataRequired(), Length(max=100)])
+    nombreProveedor = StringField('Nombre De la Empresa', validators=[DataRequired(), Length(max=100)])
     direccion = StringField('Dirección', validators=[DataRequired(), Length(max=255)])
     telefono = StringField('Teléfono', validators=[DataRequired(), Length(max=15)])
     nombreAtiende = StringField('Repartidor', validators=[DataRequired(), Length(max=100)])
