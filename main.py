@@ -1758,9 +1758,13 @@ def mostrar_compras():
 def obtener_compras_y_grafica(tipo_busqueda=None, fecha_seleccionada=None):
     fecha_inicio, fecha_fin = calcular_rango_fechas(tipo_busqueda, fecha_seleccionada)
 
-    compras = Detalle_materia_prima.query.filter(Detalle_materia_prima.fechaCompra.between(fecha_inicio, fecha_fin)).all()
+    compras = Compra.query.join(Detalle_materia_prima).filter(Detalle_materia_prima.fechaCompra.between(fecha_inicio, fecha_fin)).all()
     for compra in compras:
         compra.materia_prima = MateriaPrima.query.get(compra.idMateriaPrima)
+        detalle = Detalle_materia_prima.query.filter_by(idDetalle_materia_prima=compra.idDetalle_materia_prima).first()
+        if detalle:
+            compra.fecha_compra = detalle.fechaCompra.strftime('%Y-%m-%d') if detalle.fechaCompra else None
+            compra.fecha_vencimiento = detalle.fechaVencimiento.strftime('%Y-%m-%d') if detalle.fechaVencimiento else None
     
     # Obtener mermas de cada materia prima
     mermas = merma_inventario.query.all()
@@ -1776,9 +1780,9 @@ def obtener_compras_y_grafica(tipo_busqueda=None, fecha_seleccionada=None):
         nombre = compra.materia_prima.nombreMateria
         cantidad_comprada = compra.cantidadExistentes
         cantidad_merma = mermas_dict.get(compra.materia_prima.idMateriaPrima, 0)
-        data.append([nombre, cantidad_comprada, cantidad_merma])
+        data.append([nombre, cantidad_comprada, cantidad_merma, compra.fecha_compra, compra.fecha_vencimiento])
     
-    df = pd.DataFrame(data, columns=['Nombre', 'Compras', 'Merma'])
+    df = pd.DataFrame(data, columns=['Nombre', 'Compras', 'Merma', 'Fecha_Compra', 'Fecha_Vencimiento'])
     df = df.groupby('Nombre').sum().reset_index()
 
     if df.empty:
@@ -1803,6 +1807,7 @@ def obtener_compras_y_grafica(tipo_busqueda=None, fecha_seleccionada=None):
     img_url = url_for('static', filename='img/compras.png')
     
     return compras, img_url
+
 
 def calcular_rango_fechas(tipo_busqueda=None, fecha_seleccionada=None):
     if tipo_busqueda == 'dia':
@@ -1863,8 +1868,11 @@ def ventas():
 
     # Si la solicitud es GET, mostrar todas las ventas
     total_ventas, ventas_detalle, df_ventas_agrupado = calcular_total_tipoventas()
+    
+    if total_ventas is None:
+        flash("No hay ventas registradas.", "warning")
+    
     return render_template('dashboard_ventas.html', form=form, ventas=total_ventas, ventas_detalle=ventas_detalle, df_ventas_agrupado=df_ventas_agrupado)
-
 
 def calcular_total_tipoventas(tipo_seleccion=None, fecha_seleccionada=None):
     total_ventas = 0.0
@@ -2049,8 +2057,8 @@ def calcular_ganancias(tipo_seleccion=None, fecha_seleccionada=None):
 
     # Crear la gráfica de dona con los segmentos de ventas y compras
     plt.figure(figsize=(10, 6))  # Ajustar el tamaño de la figura
-    plt.pie([total_ventas, total_compras], labels=['Total Ventas\nCantidad: {}'.format(total_ventas), 'Total Compras\nCantidad: {}'.format(total_compras)], startangle=140, counterclock=False, colors=['green', 'red'], wedgeprops=dict(width=0.4))
-    plt.title('Total de Ventas y Compras')
+    plt.pie([total_ventas, total_compras], labels=['Ventas\nCantidad: {}'.format(total_ventas), 'Gastos\nCantidad: {}'.format(total_compras)], startangle=140, counterclock=False, colors=['green', 'red'], wedgeprops=dict(width=0.4))
+    plt.title('TentaCrisp S.A de CV\nEstado de resultados')
 
     # Agregar un círculo en el centro para hacerla una dona
     centre_circle = plt.Circle((0, 0), 0.70, fc='white')
@@ -2100,30 +2108,93 @@ def calcular_total_ventas(fecha_inicio=None, fecha_fin=None):
     return total_ventas if total_ventas is not None else 0.0
 
 def calcular_total_compras(fecha_inicio=None, fecha_fin=None):
-    if fecha_inicio is not None and fecha_fin is not None:
-        total_compras = db.session.query(func.sum(Detalle_materia_prima.cantidadExistentes * MateriaPrima.precioCompra)).join(MateriaPrima).filter(Detalle_materia_prima.fechaCompra.between(fecha_inicio, fecha_fin)).scalar()
-    else:
-        total_compras = db.session.query(func.sum(Detalle_materia_prima.cantidadExistentes * MateriaPrima.precioCompra)).join(MateriaPrima).scalar()
-
-    if total_compras is None:
-        total_compras = 0.0
-
-    print("Total de compras:", total_compras)
-
-    total_merma_galleta = 0.0
-    productos = db.session.query(Producto.idProducto).all()
-
-    for producto in productos:
-        id_producto = producto[0]
-        merma_producto = db.session.query(func.sum(Merma.cantidadMerma * Producto.precioVenta)).join(Producto, Merma.idProducto == Producto.idProducto).filter(Producto.idProducto == id_producto).scalar()
-        if merma_producto is not None:
-            total_merma_galleta += merma_producto
-
-    print("Total de merma:", total_merma_galleta)
-
-    total_compras += total_merma_galleta
+    # Paso 1: Calcular el total de compras de materia prima
+    query_compras = db.session.query(func.sum(MateriaPrima.precioCompra))
     
+    if fecha_inicio is not None and fecha_fin is not None:
+        query_compras = query_compras.select_from(Detalle_materia_prima).join(MateriaPrima).filter(Detalle_materia_prima.fechaCompra.between(fecha_inicio, fecha_fin))
+    else:
+        query_compras = query_compras.select_from(MateriaPrima)
+    
+    total_compras_materia_prima = query_compras.scalar()
+
+    if total_compras_materia_prima is None:
+        total_compras_materia_prima = 0.0
+
+    print("Total de compras de materia prima:", total_compras_materia_prima)
+
+    # Paso 2: Calcular el total de merma de producto
+    query_merma_producto = db.session.query(func.sum(Merma.cantidadMerma * Producto.precioVenta))
+    
+    if fecha_inicio is not None and fecha_fin is not None:
+        query_merma_producto = query_merma_producto.join(Producto, Merma.idProducto == Producto.idProducto).filter(Merma.fechaMerma.between(fecha_inicio, fecha_fin))
+    
+    total_merma_producto = query_merma_producto.scalar()
+
+    if total_merma_producto is None:
+        total_merma_producto = 0.0
+
+    print("Total de merma de producto:", total_merma_producto)
+
+    # Paso 3: Calcular el total de merma de inventario
+    total_merma_inventario = calcular_valor_total_mermaInventario(fecha_inicio, fecha_fin)
+    
+    print("Total de merma de inventario:", total_merma_inventario)
+    
+    total_precio_produccion= calcular_precio_produccion_galletas_vendidas(fecha_inicio, fecha_fin)
+    
+    print("Total de precio de produccion:", total_precio_produccion)
+
+    # Paso 4: Sumar los totales de compras y merma
+    total_compras = total_compras_materia_prima + total_merma_producto + total_merma_inventario + total_precio_produccion
+
+    print("Total de compras con merma:", total_compras)
+
     return total_compras
+
+def calcular_valor_total_mermaInventario(fecha_inicio=None, fecha_fin=None):
+    # Paso 1: Obtener todas las merma de inventario dentro del rango de fechas
+    merma = merma_inventario.query.filter(merma_inventario.fechaMerma.between(fecha_inicio, fecha_fin)).all()
+
+    # Paso 2: Calcular la cantidad total de merma
+    cantidad_total_merma = sum(m.cantidadMerma for m in merma)
+
+    # Paso 3: Calcular el precio total de las compras de materia prima
+    compras = Compra.query.join(Detalle_materia_prima).all()
+    precio_total_compras = sum(MateriaPrima.query.filter_by(idMateriaPrima=compra.idMateriaPrima).first().precioCompra for compra in compras)
+
+    # Paso 4: Calcular el precio por unidad de materia prima
+    if precio_total_compras != 0:
+        precio_por_unidad = precio_total_compras / sum(compra.cantidadExistentes for compra in compras)
+    else:
+        precio_por_unidad = 0.0
+
+    # Paso 5: Calcular el valor total de la merma
+    valor_total_merma = cantidad_total_merma * precio_por_unidad
+
+    return valor_total_merma
+
+def calcular_precio_produccion_galletas_vendidas(fecha_inicio=None, fecha_fin=None):
+
+    # Filtrar las ventas por fecha
+    ventas = Venta.query.filter(Venta.fechaVenta.between(fecha_inicio, fecha_fin)).all()
+
+    # Inicializar el precio total de producción de las galletas vendidas
+    precio_produccion_galletas_vendidas = 0.0
+
+    # Iterar sobre cada venta para obtener los detalles de venta y calcular el precio total de producción
+    for venta in ventas:
+        detalles_venta = DetalleVenta.query.filter_by(idVenta=venta.idVenta).all()
+        for detalle in detalles_venta:
+            producto = Producto.query.get(detalle.idProducto)
+            precio_produccion_galletas_vendidas += detalle.cantidad * producto.precioProduccion
+
+    return precio_produccion_galletas_vendidas
+
+
+
+
+
 
 @app.route('/punto_de_venta')
 @login_required

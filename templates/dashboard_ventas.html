@@ -23,11 +23,9 @@
       </div>
     </div>
     <button type="submit" class="btn btn-primary mt-4">Mostrar Ventas</button>
-      
-    
   </form>
 
-  {% if ventas %}
+  {% if ventas and ventas_detalle %}
     <div class="mt-5">
       <h2>Total de ventas: {{ ventas }}</h2>
     </div>
@@ -56,19 +54,23 @@
         </table>
       </div>
     </div>
-      
+    
     <div class="mt-5" id="grafica-container" style="display: none;">
       <h2>Galletas más Vendidas</h2>
       <img id="grafica-img" src="{{ url_for('static', filename='top_10_productos_mas_vendidos.png') }}" alt="Top 10 de Galletas más Vendidas" class="img-fluid">
     </div>
     
     <div class="row mt-3">
-      <div class="col-md-6">
+      <div class="col-md-3">
         <button onclick="toggleGrafica()" class="btn btn-primary">Mostrar/Ocultar Gráfica</button>
       </div>
-      <div class="col-md-6">
+      <div class="col-md-3">
         <a href="{{ url_for('ganancias') }}" class="btn btn-primary float-end">Ganancias</a>
       </div>
+    </div>
+  {% else %}
+    <div class="alert alert-warning mt-5" role="alert">
+      No hay ventas para la fecha seleccionada.
     </div>
   {% endif %}
 </div>

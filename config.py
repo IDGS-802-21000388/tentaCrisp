@@ -5,7 +5,7 @@ def encrypt(cadena):
 def decrypt(cadena_ofuscada):
     return base64.b64decode(cadena_ofuscada.encode()).decode()
 
-cadena_conexion = 'mysql+pymysql://EdwinRivera:Yovani2002@127.0.0.1/don_galletoV2'
+cadena_conexion = 'mysql+pymysql://Diego:Diego1234_root@127.0.0.1/don_galletoV2'
 
 cadena_ofuscada = encrypt(cadena_conexion)
 cadena_descifrada = decrypt(cadena_ofuscada)

@@ -3,7 +3,6 @@ let subtotales = {};
 
 function agregarAlCarrito(event, idProducto, nombreProducto, precioProducto) {
     precioGalleta = precioProducto;
-    const precioGalleta = preciosGalleta[idProducto] || precioProducto;
     console.log(precioGalleta);
     event.preventDefault();
     

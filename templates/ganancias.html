@@ -32,25 +32,30 @@
       <img src="{{ url_for('static', filename='total_ventas_compras_dona.png') }}" alt="Gráfica Circular" class="img-fluid">
     </div>
   {% endif %}
-  {% if ganancias is none %}
-  <div class="mt-3 ">
-    <strong>Ganancias: $0</strong>
+  <div class="row justify-content-center mt-3">
+    <div class="col-md-6 text-center">
+      {% if ganancias is none %}
+        <strong style="color: red; font-size: 24px;">Ganancias: $0</strong>
+      {% elif ganancias <= 0 %}
+        <strong style="color: red; font-size: 24px;">Ganancias: ${{ ganancias }}</strong>
+      {% else %}
+        <strong style="color: green; font-size: 24px;">Ganancias: ${{ ganancias }}</strong>
+      {% endif %}
+    </div>
   </div>
-{% else %}
-  <div class="mt-3 ">
-    <strong>Ganancias: ${{ ganancias }}</strong>
-  </div>
-{% endif %}
+  
+  
 
 </div>
 <div class="row mt-3">
-  <div class="col-md-6">
+  <div class="col-md-3">
     <button onclick="toggleGrafica()" class="btn btn-primary btn-block">Mostrar/Ocultar Gráfica</button>
   </div>
-  <div class="col-md-6">
+  <div class="col-md-3">
     <a href="{{ url_for('ventas') }}" class="btn btn-primary btn-block">Ventas</a>
   </div>
 </div>
+
 <script src="{{ url_for('static', filename='js/ganancias.js') }}"></script>
 
 {% endblock %}
