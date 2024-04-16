@@ -12,8 +12,7 @@
                                 style="color: #826455; margin-top: 55%;"></i>Solicitudes pendientes</h1>
                     </div>
 
-                    
-                    <form id="formProducir" action="/producir" class="needs-validation" method="POST">
+                    <form id="formProducir" action="/produccion/producir" class="needs-validation" method="POST">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                         <input type="hidden" id="productoSeleccionado" name="productoSeleccionado">
 
@@ -64,7 +63,7 @@
 
 
 
-                    <form id="formTerminarProduccion" action="/terminar_produccion" class="needs-validation" method="POST">
+                    <form id="formTerminarProduccion" action="/produccion/terminar_produccion" class="needs-validation" method="POST">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                         <input type="hidden" id="productoSeleccionadoProd" name="productoSeleccionadoProd">
                         <input type="hidden" id="txtIdProductoProd" name="txtIdProductoProd">
@@ -198,7 +197,7 @@
                             <td>{{ producto['precioVenta']-producto['precioProduccion'] }}</td>
                             <td>{{ producto['fechaVencimiento'] }}</td>
                             <td>
-                                <form method="POST" action="/del_act_logica_produccion" class="eliminarForm">
+                                <form method="POST" action="/produccion/del_act_logica_produccion" class="eliminarForm">
                                     <input type="hidden" id="accion" name="accion" value="">
                                     <input type="hidden" name="id_producto_{{ producto['idProducto'] }}"
                                         value="{{ producto['idProducto'] }}">
@@ -216,7 +215,7 @@
                                     {% else %}
                                     <!-- Botón para activar el detalle del producto -->
                                     <button data-fecha="{{ producto['fechaVencimiento'] }}" type="button"
-                                        style="background: transparent;" class="btnActivar"
+                                        style="background: transparent; border:None;" class="btnActivar"
                                         onclick="confirmarAccion('{{ producto.idProducto }}', '{{ producto.fechaVencimiento }}', 'activar')">
                                         <i class="fa-solid fa-check" style="color: #28a745;"></i>
                                     </button>

@@ -1,38 +1,29 @@
-from flask import Flask, request, render_template, flash, g, redirect, url_for, session, jsonify, make_response
+import forms, ssl, json, re, html2text, pandas as pd, os, matplotlib
+from flask import Flask, request, render_template, flash, redirect, url_for, jsonify, make_response, send_file , abort
 from flask_wtf.csrf import CSRFProtect
 from config import DevelopmentConfig
-import forms, ssl, base64, json, re
-from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Receta, Detalle_receta, Detalle_materia_prima, Medida, merma_inventario ,LogsUser, Venta, DetalleVenta, Detalle_materia_prima, Detalle_producto, Proveedor, Merma, Compra, solicitudProduccion
-import forms, ssl, base64, json, re, html2text
-from sqlalchemy import func , and_
+from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Detalle_materia_prima, Medida,LogsUser, Venta, DetalleVenta, Detalle_materia_prima, Detalle_producto, Proveedor, Merma, Compra, merma_inventario
+from sqlalchemy import func
 from functools import wraps
 from flask_cors import CORS , cross_origin
-from flask_wtf.recaptcha import Recaptcha
-from datetime import datetime ,timedelta, timezone
+from datetime import datetime ,timedelta
 from flask_login import current_user, LoginManager, login_user, logout_user, login_required, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy.orm import Session
 ssl._create_default_https_context = ssl._create_unverified_context
 from collections import defaultdict
-from matplotlib import pyplot as plt
-import os
-from flask import render_template, send_from_directory
 import matplotlib.pyplot as plt
-from io import BytesIO
-import base64
-import pandas as pd
-import matplotlib
-matplotlib.use('Agg')
-import numpy as np
+from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from flask import send_file , abort
 from reportlab.platypus import Table, TableStyle
 from reportlab.lib import colors
-
+from produccion.producir import producir_page
+matplotlib.use('Agg')
 
 app = Flask(__name__)
+app.register_blueprint(producir_page, url_prefix='/produccion')
+
 @app.before_request
 def cors():
     if request.remote_addr != '127.0.0.1' :
@@ -73,7 +64,6 @@ def admin_required(f):
 def ventas_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        print(current_user.rol)
         if current_user.rol != 'Administrador':
             if current_user.rol != 'Ventas' or current_user.rol != 'Administrador':
                 flash('No tienes permisos', 'warning')
@@ -104,9 +94,7 @@ def login():
 
         nombreUsuario = str(html2text.html2text(usuario_form.nombreUsuario.data)).strip()
         contrasenia = str(html2text.html2text(usuario_form.contrasenia.data)).strip()
-        print("Nombre Usuario",nombreUsuario)
         hashed_password = generate_password_hash(contrasenia)
-        print("Contraseña", hashed_password)
         user = Usuario.query.filter_by(nombreUsuario=nombreUsuario).first()
         intentos = user.intentos
         if user and check_password_hash(user.contrasenia, contrasenia) and int(intentos)<3: 
@@ -266,7 +254,6 @@ def inventario():
     proveedores = Proveedor.query.all()
     if request.method == 'POST':
         nombreMateria = inventario.nombre.data
-        print("Nombre Materia",nombreMateria)
         precio = inventario.precio.data
         cantidad = inventario.cantidad.data
         tipo_compra = request.form.get('tipo_compra')
@@ -747,7 +734,6 @@ def inventario():
 
     materias_primas = MateriaPrima.query.all()
     detalle_primas = Detalle_materia_prima.query.filter_by(estatus=1).all()
-    print("Detalle Prima", detalle_primas)
     proveedores = Proveedor.query.all()
     medida = Medida.query.all()
 
@@ -926,7 +912,6 @@ def editar_inventario():
 
                             try:
                                 db.session.commit()
-                                print("Detalle de materia prima actualizado correctamente.")
                             except Exception as e:
                                 db.session.rollback()
                                 flash("Error al actualizar el detalle de materia prima en la base de datos: " + str(e))
@@ -955,7 +940,6 @@ def editar_inventario():
                                 flash("Materia prima actualizada correctamente.")
                             except Exception as e:
                                 db.session.rollback()
-                                print("Error al actualizar la materia prima en la base de datos: " + str(e))
                         else:
                             flash("La materia prima con el ID proporcionado no existe en la base de datos.")
 
@@ -970,7 +954,6 @@ def editar_inventario():
 
                             try:
                                 db.session.commit()
-                                print("Detalle de materia prima actualizado correctamente.")
                             except Exception as e:
                                 db.session.rollback()
                                 flash("Error al actualizar el detalle de materia prima en la base de datos: " + str(e))
@@ -1189,11 +1172,6 @@ def eliminar_inventario():
     id_detalle_prima = int(request.form.get("idDetallePrima"))
     cantidad_merma = float(request.form.get("cantidadE"))
     detalle_prima = Detalle_materia_prima.query.get(id_detalle_prima)
-    print("ID MATERIA PRIMA: ", id_materia_prima)
-    print("ID DETALLE PRIMA: ", id_detalle_prima)
-    print("CANTIDAD MERMA: ", cantidad_merma)
-    print("DETALLE PRIMA: ", detalle_prima)
-    
     
     if detalle_prima:
         detalle_prima.estatus = 0
@@ -1224,13 +1202,11 @@ def registrar_merma():
         #id_detalle_prima = int(request.form.get("idDetalle"))
         id_materia = int(request.form.get("idMateria"))
         cantidad_merma = float(merma.merma.data)
-        print("ID MATERIA : ", id_materia)
 
         detalle_prima = Detalle_materia_prima.query.get(id_materia)
 
         if detalle_prima:
             cantidad_existente = detalle_prima.cantidadExistentes
-            print("Cantidad existente: ", cantidad_existente)
             if cantidad_existente is not None and cantidad_existente >= cantidad_merma:
                 detalle_prima.cantidadExistentes -= cantidad_merma
                 db.session.commit()
@@ -1258,381 +1234,6 @@ def registrar_merma():
     return redirect(url_for('inventario'))
 
 # Fin del Modulo de Materia Prima
-
-@app.route('/recetas', methods=['GET', 'POST'])
-@login_required
-@produccion_required
-def recetas():
-    getAllingredientes = getAllIngredientes()
-    nueva_galleta_form = forms.NuevaGalletaForm()
-    ingredientes = []
-    productos = []
-    productos_detalle = db.session.query(Producto).all()
-
-    for producto in productos_detalle:
-        fecha_vencimiento_producto = ''
-        cantidad_existentes_producto = ''
-            
-        ingredientes_asociados = db.session.query(MateriaPrima, Detalle_receta).join(Detalle_receta, MateriaPrima.idMateriaPrima == Detalle_receta.idMateriaPrima).filter(Detalle_receta.idReceta == producto.idProducto).all()
-            
-        ingredientes_serializados = []
-        for ingrediente, detalle_receta in ingredientes_asociados:
-            ingrediente_dict = {
-                'id': ingrediente.idMateriaPrima,
-                'nombre': ingrediente.nombreMateria,
-                'cantidad': detalle_receta.porcion
-            }
-            ingredientes_serializados.append(ingrediente_dict)
-            
-        ingredientes_serializados_json = json.dumps(ingredientes_serializados)
-
-        producto_dict = {
-            'idProducto': producto.idProducto,
-            'nombreProducto': producto.nombreProducto,
-            'precioProduccion': producto.precioProduccion,
-            'precioVenta': producto.precioVenta,
-            'fotografia': producto.fotografia,
-            'estatus': producto.estatus,
-            'cantidadExistentes': cantidad_existentes_producto,
-            'fechaVencimiento': fecha_vencimiento_producto,
-            'ingredientes': ingredientes_serializados_json
-        }
-
-        productos.append(producto_dict)
-
-    #if len(productos) == 0:
-    #    productos.append({})
-
-    if request.method == 'POST' :
-        nombre_galleta = nueva_galleta_form.nombre_galleta.data
-        precio_produccion = nueva_galleta_form.precio_produccion.data
-        precio_venta = nueva_galleta_form.precio_venta.data
-        fechaCaducidad = nueva_galleta_form.fechaCaducidad.data
-
-        if 'fotografia' in request.files:
-            fotografia_archivo = request.files['fotografia']            
-            imagen_bytes = fotografia_archivo.read()            
-            imagen_base64 = base64.b64encode(imagen_bytes).decode("utf-8")
-
-        for key, value in request.form.items():
-            if key.startswith('ingredientes_'):
-                id_ingrediente = key.split('_')[1]
-                valor_ingrediente = value
-                ingredientes.append({'id':id_ingrediente, 'cantidad':valor_ingrediente})
-
-        nuevo_producto = Producto(nombreProducto=nombre_galleta, precioVenta=precio_venta, precioProduccion=precio_produccion, idMedida=2, fotografia=imagen_base64)
-        db.session.add(nuevo_producto)
-        db.session.commit()
-
-        #detalle_producto = Detalle_producto(fechaVencimiento=fechaCaducidad, cantidadExistentes=0, idProducto=nuevo_producto.idProducto)
-        #db.session.add(detalle_producto)
-        nueva_receta = Receta(idMedida=1, idProducto=nuevo_producto.idProducto)
-        db.session.add(nueva_receta)
-        db.session.commit()
-
-        for key, value in request.form.items():
-            if key.startswith('ingredientes_'):
-                id_ingrediente = key.split('_')[1]
-                valor_ingrediente = value
-
-                detalle_receta = Detalle_receta(porcion=valor_ingrediente, idMateriaPrima=id_ingrediente, idReceta=nueva_receta.idReceta)
-                db.session.add(detalle_receta)
-
-        db.session.commit()
-        flash('La receta ha sido agregada correctamente!', 'success')
-        return redirect(url_for('recetas'))
-
-    return render_template('receta.html', form=nueva_galleta_form, ingredientes=getAllingredientes, productos=productos)
-
-@app.route('/editar_producto', methods=['GET', 'POST'])
-@login_required
-def editar_producto():
-    getAllingredientes = getAllIngredientes()
-    nueva_galleta_form = forms.NuevaGalletaForm()
-    productos = []
-    detalle_productos = Detalle_producto.query.all()
-    fotografia_base64 = None
-    id_producto = None
-    if request.method == 'POST':
-        id_producto = request.form.get('product')
-        nombre_producto = request.form.get('nombre_producto')
-        cantidad_existentes = request.form.get('cantidad_existentes')
-        precio_produccion = request.form.get('precio_produccion')
-        precio_venta = request.form.get('precio_venta')
-        fotografia = request.files['fotografia_editar']
-        
-        producto = Producto.query.get(id_producto)
-        producto.nombreProducto = nombre_producto
-        producto.precioProduccion = precio_produccion
-        producto.precioVenta = precio_venta
-
-        if fotografia:
-            fotografia = request.files['fotografia_editar']
-            fotografia_base64 = base64.b64encode(fotografia.read()).decode('utf-8')
-            producto.fotografia = fotografia_base64
-
-        #detalle_producto = Detalle_producto.query.filter_by(idProducto=id_producto).first()
-        #detalle_producto.cantidadExistentes = cantidad_existentes
-
-        ingredientes_presentes = []
-
-        for key, value in request.form.items():
-            if key.startswith('ingredienteseditar_'):
-                id_ingrediente = key.split('_')[-1]
-                cantidad_ingrediente = value
-                ingredientes_presentes.append(id_ingrediente)
-                
-                receta = Receta.query.filter_by(idProducto=id_producto).first()
-                detalle_receta = Detalle_receta.query.filter_by(idReceta=receta.idReceta, idMateriaPrima=id_ingrediente).first()
-                
-                if detalle_receta:
-                    detalle_receta.porcion = cantidad_ingrediente
-                else:
-                    nuevo_detalle_receta = Detalle_receta(porcion=cantidad_ingrediente, idMateriaPrima=id_ingrediente, idReceta=id_producto)
-                    db.session.add(nuevo_detalle_receta)
-
-        receta = Receta.query.filter_by(idProducto=id_producto).first()
-        detalles_receta_actuales = Detalle_receta.query.filter(and_(Detalle_receta.idReceta == receta.idReceta, ~Detalle_receta.idMateriaPrima.in_(ingredientes_presentes))).all()
-
-        for detalle_receta_actual in detalles_receta_actuales:
-            db.session.delete(detalle_receta_actual)
-
-        db.session.commit()
-        
-        flash('El producto ha sido editado!', 'success')
-        return redirect(url_for('recetas'))
-    
-    for producto, detalle in zip(Producto.query.all(), detalle_productos):
-        producto_dict = {
-            'idProducto': producto.idProducto,
-            'nombreProducto': producto.nombreProducto,
-            'precioProduccion': producto.precioProduccion,
-            'precioVenta': producto.precioVenta,
-            'cantidadExistentes': detalle.cantidadExistentes
-        }
-        productos.append(producto_dict)
-    
-    return render_template('receta.html', form=nueva_galleta_form, ingredientes=getAllingredientes, productos=productos)
-
-@app.route('/eliminar_logica_producto', methods=['POST'])
-@login_required
-def eliminar_producto():
-    id_producto = None
-    fecha_vencimiento = request.form.get('fecha_vencimiento')
-    accion = request.form.get('accion')
-    if request.method == 'POST':
-        for key, value in request.form.items():
-            if key.startswith('id_producto_'):
-                id_producto = value        
-        producto = Producto.query.get(id_producto)
-        if accion == 'eliminar':
-            if producto:
-                producto.estatus = False
-                db.session.commit()
-                flash('¡El producto ha sido eliminado lógicamente!', 'success')
-                return redirect(url_for('recetas'))
-            else:
-                flash('No se encontró ningún producto con el ID proporcionado', 'error')
-                return 'No se encontró ningún producto con el ID proporcionado'
-        elif accion =='activar':
-            if producto:
-                producto.estatus = True
-                db.session.commit()
-                flash('¡El producto ha sido activado lógicamente!', 'success')
-                return redirect(url_for('recetas'))
-            else:
-                flash('No se encontró ningún producto con el ID proporcionado', 'error')
-                return 'No se encontró ningún producto con el ID proporcionado'
-    else:
-        flash('No se recibió una solicitud POST', 'error')
-        return 'No se recibió una solicitud POST'
-
-@app.route('/producir', methods=['POST'])
-@login_required
-@produccion_required
-def producir():
-    if request.method == 'POST':
-        id_solicitud = request.form.get('productoSeleccionado')
-        if id_solicitud:
-            solicitud = solicitudProduccion.query.get(id_solicitud)
-            if solicitud:
-                solicitud.estatus = 2
-                db.session.commit()
-                flash('Comenzó con la producción de la galleta', 'success')
-                return redirect(url_for('productos'))
-            else:
-                return 'La solicitud de producción no existe', 404
-        else:
-            return 'ID de solicitud no proporcionado en el formulario', 400
-
-@app.route('/terminar_produccion', methods=['POST'])
-@login_required
-@produccion_required
-def terminar_produccion():
-    if request.method == 'POST':
-        print(request.form)
-        cantidadProduccion = 40
-        cantidadMerma = int(request.form.get('cantidadMerma')) if request.form.get('cantidadMerma') else 0
-        idProducto = int(request.form.get('txtIdProductoProd')) if request.form.get('txtIdProductoProd') else 0
-        fechaVencimiento = request.form.get('fechaVencimiento') if request.form.get('fechaVencimiento') else 0
-
-        if idProducto == 0 or fechaVencimiento == 0:
-            flash('Por favor, completa todos los campos correctamente', 'error')
-            return redirect(url_for('productos'))
-        detalle_producto = Detalle_producto(
-            fechaVencimiento=fechaVencimiento,
-            cantidadExistentes=cantidadProduccion - cantidadMerma,
-            idProducto=idProducto
-        )
-        db.session.add(detalle_producto)
-        db.session.commit()
-        if cantidadMerma != 0:
-            merma = Merma(
-                cantidadMerma=cantidadMerma,
-                fechaMerma = datetime.now(),
-                idProducto=idProducto,
-                idDetalle_producto=detalle_producto.idDetalle_producto
-            )        
-            db.session.add(merma)
-            db.session.commit()
-
-        receta = Receta.query.filter_by(idProducto=idProducto).first()
-        if receta:
-            detalles_receta = Detalle_receta.query.filter_by(idReceta=receta.idReceta).all()
-            for detalle in detalles_receta:
-                materia_prima = MateriaPrima.query.get(detalle.idMateriaPrima)
-                cantidad_necesaria = detalle.porcion
-                detalle_materia_prima = Detalle_materia_prima.query.filter_by(idMateriaPrima=materia_prima.idMateriaPrima, estatus=1).filter(Detalle_materia_prima.cantidadExistentes > 0).first()
-                if detalle_materia_prima:
-                    detalle_materia_prima.cantidadExistentes -= cantidad_necesaria
-                    db.session.commit()
-                else:
-                    flash(f'No se encontró ingriendientes en existencia para {materia_prima.nombreMateria}', 'error')
-                    return redirect(url_for('productos'))
-            flash('La galletas se han horneado!', 'success')
-            id_solicitud = request.form.get('productoSeleccionadoProd')
-            if id_solicitud:
-                solicitud = solicitudProduccion.query.get(id_solicitud)
-                if solicitud:
-                    solicitud.estatus = 3
-                    db.session.commit()
-            return redirect(url_for('productos'))
-    else:
-        flash('No se recibió una solicitud POST', 'error')
-        return 'No se recibió una solicitud POST'
-
-@app.route('/del_act_logica_produccion', methods=['POST'])
-@login_required
-def eliminar_logica_produccion():
-    id_producto = None
-    fecha_vencimiento = request.form.get('fecha_vencimiento1')
-    accion = request.form.get('accion')
-
-    for key, value in request.form.items():
-            if key.startswith('id_producto_'):
-                id_producto = value     
-    if accion == 'eliminar':   
-        detalle_producto = Detalle_producto.query.filter_by(idProducto=id_producto, fechaVencimiento=fecha_vencimiento).first()
-        if detalle_producto:
-            detalle_producto.estatus = False
-            db.session.commit()
-            
-            flash('¡El detalle del producto ha sido eliminado lógicamente!', 'success')
-    elif accion == 'activar':
-        detalle_producto = Detalle_producto.query.filter_by(idProducto=id_producto, fechaVencimiento=fecha_vencimiento).first()
-        if detalle_producto:
-            detalle_producto.estatus = True
-            db.session.commit()
-            
-            flash('¡El detalle del producto ha sido activado lógicamente!', 'success')
-    else:
-        flash('No se encontró ningún detalle de producto con el ID y fecha proporcionados', 'error')
-
-    return redirect(url_for('productos'))
-
-@app.route('/productos', methods=['GET', 'POST'])
-@login_required
-def productos():
-    productos = []
-    products = []
-
-    solicitudes = solicitudProduccion.query.filter(solicitudProduccion.estatus.in_([1, 2])).all()
-    for solicitud in solicitudes:
-        product = Producto.query.filter_by(idProducto=solicitud.idProducto).first()
-        
-        if product:
-            products.append({
-                'idSolicitud': solicitud.idSolicitud,
-                'idProducto': product.idProducto,
-                'nombreProducto': product.nombreProducto,
-                'cantidadProduccion': solicitud.cantidadProduccion,
-                'precioVenta': product.precioVenta,
-                'precioProduccion': product.precioProduccion,
-                'idMedida': product.idMedida,
-                'fotografia': product.fotografia,
-                'estatus': solicitud.estatus
-            }) 
-
-    productos_detalle = db.session.query(Producto, Detalle_producto).outerjoin(Detalle_producto, Producto.idProducto == Detalle_producto.idProducto).filter(Producto.estatus == 1).all()
-    productos_detalle_filtrados = [(producto, detalle) for producto, detalle in productos_detalle if detalle is not None]
-
-    for producto, detalle in productos_detalle_filtrados:
-        if detalle is not None:
-            fecha_vencimiento_producto = detalle.fechaVencimiento.strftime("%Y-%m-%d %H:%M:%S") if detalle.fechaVencimiento else ''
-            cantidad_existentes_producto = detalle.cantidadExistentes if detalle.cantidadExistentes else ''
-            detalle_estatus = detalle.estatus
-
-        ingredientes_asociados = db.session.query(MateriaPrima, Detalle_receta).join(Detalle_receta, MateriaPrima.idMateriaPrima == Detalle_receta.idMateriaPrima).filter(Detalle_receta.idReceta == producto.idProducto).all()
-        
-        ingredientes_serializados = []
-        for ingrediente, detalle_receta in ingredientes_asociados:
-            ingrediente_dict = {
-                'id': ingrediente.idMateriaPrima,
-                'nombre': ingrediente.nombreMateria,
-                'cantidad': detalle_receta.porcion
-            }
-            ingredientes_serializados.append(ingrediente_dict)
-
-        ingredientes_serializados_json = json.dumps(ingredientes_serializados)
-        
-        producto_dict = {
-            'idProducto': producto.idProducto,
-            'nombreProducto': producto.nombreProducto,
-            'precioProduccion': producto.precioProduccion,
-            'precioVenta': producto.precioVenta,
-            'fotografia': producto.fotografia,
-            'detalle_estatus': detalle_estatus,
-            'cantidadExistentes': cantidad_existentes_producto,
-            'fechaVencimiento': fecha_vencimiento_producto,
-            'ingredientes': ingredientes_serializados_json
-        }
-
-        productos.append(producto_dict)
-
-    return render_template('productos.html', productos=productos, products=products)
-
-def getAllIngredientes():
-    ingredientes = db.session.query(
-        MateriaPrima.idMateriaPrima,
-        MateriaPrima.nombreMateria,
-        MateriaPrima.precioCompra,
-        MateriaPrima.cantidad,
-        Medida.tipoMedida
-    ).join(
-        Medida, MateriaPrima.idMedida == Medida.idMedida
-    ).all()
-
-    ingredientes_json = []
-    for ingrediente in ingredientes:
-        ingrediente_dict = {
-            'idMateriaPrima': ingrediente.idMateriaPrima,
-            'nombreMateria': ingrediente.nombreMateria,
-            'precioCompra': ingrediente.precioCompra,
-            'cantidad': ingrediente.cantidad,
-            'tipoMedida': ingrediente.tipoMedida
-        }
-        ingredientes_json.append(ingrediente_dict)
-    return ingredientes
 
 password_pattern = re.compile(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$')
 
@@ -1676,7 +1277,6 @@ def usuarios():
     usuarios = Usuario.query.all()
         
     return render_template('usuarios.html', form=usuario_form, usuarios=usuarios)
-
 
 @app.route('/editar_usuario', methods=['POST'])
 @login_required
@@ -1753,7 +1353,6 @@ def mostrar_compras():
         flash("No hay compras disponibles.", "warning")
         return render_template('compras.html', form=form)
     return render_template('compras.html', form=form, compras=compras, img_url=img_url)
-
 
 def obtener_compras_y_grafica(tipo_busqueda=None, fecha_seleccionada=None):
     fecha_inicio, fecha_fin = calcular_rango_fechas(tipo_busqueda, fecha_seleccionada)
@@ -1997,7 +1596,6 @@ def calcular_total_tipoventas(tipo_seleccion=None, fecha_seleccionada=None):
 
     return total_ventas, ventas_detalle, df_ventas_agrupado
 
-
 @app.route('/ganancias', methods=['GET', 'POST'])
 @login_required
 @admin_required
@@ -2035,7 +1633,6 @@ def ganancias():
         total_ventas, total_compras, ganancias, img_url = ganancias_result
 
     return render_template('ganancias.html', form=form, total_ventas=total_ventas, total_compras=total_compras, ganancias=ganancias, img_url=img_url)
-
 
 def calcular_ganancias(tipo_seleccion=None, fecha_seleccionada=None):
     # Calcular el rango de fechas según el tipo de selección
@@ -2202,10 +1799,7 @@ def calcular_precio_produccion_galletas_vendidas(fecha_inicio=None, fecha_fin=No
 def punto_de_venta():
     productos = Producto.query.all()
     detalles_producto = Detalle_producto.query.filter_by(estatus=1).order_by(Detalle_producto.fechaVencimiento.desc()).all()
-    print(detalles_producto)
-    print(productos)
     return render_template('venta.html', productos=productos, detalles_producto=detalles_producto)
-
 
 @app.route('/pv_galleta_ticket', methods=['POST'])
 @login_required
@@ -2275,9 +1869,7 @@ def pv_galleta_Sin_Ticket():
 
     return redirect(url_for('punto_de_venta'))
 
-
 def descontar_cantidad_producto(id_producto, cantidad):
-    print("id_producto: ", id_producto)
     detalle_producto = Detalle_producto.query.filter_by(idProducto=id_producto).first()
 
     if detalle_producto:
@@ -2288,7 +1880,6 @@ def descontar_cantidad_producto(id_producto, cantidad):
             flash("No hay suficiente producto en existencia", "error")
     else:
         flash("El producto no fue encontrado", "error")
-
 
 def calcular_total(datos):
     total = 0

@@ -18,10 +18,11 @@ $(document).ready(function() {
         var cantidadPorcion = $("#txtCantidadPorcionEditar").val(); 
         var ingredienteSeleccionado = $('#txtIngredientes_editar option:selected').text();
         var idIngredienteSeleccionado = $('#txtIngredientes_editar option:selected').attr('id');
+        var medidaIngredienteSeleccionado = $('#txtIngredientes_editar option:selected').attr('medida');
         var newRow = `<tr>
                         <input type="hidden" name="ingredienteseditar_${idIngredienteSeleccionado}" id="${idIngredienteSeleccionado}" value="${cantidadPorcion}">
                         <td value="${ingredienteSeleccionado}" id="${idIngredienteSeleccionado}"> ${ingredienteSeleccionado} </td>
-                        <td> ${cantidadPorcion} gramos</td>
+                        <td> ${cantidadPorcion} ${medidaIngredienteSeleccionado}</td>
                         <td><button id="${idIngredienteSeleccionado}" class="btnEliminar"><i class="fa-solid fa-trash" style="color: #c12525;"></i></button></td>
                     </tr>`;
         $('#tblIngredientesEditar tbody').append(newRow);  
@@ -114,7 +115,7 @@ $(document).on('click', '.btnEditar', function() {
     $.each(ingredientes, function(index, ingrediente) {
         var fila = '<tr>' +
             '<td>' + ingrediente.nombre + '</td>' +
-            '<td>' + ingrediente.cantidad + ' gramos</td>' +
+            '<td>' + ingrediente.cantidad + " " + ingrediente.medida + '</td>'
             '<input type="hidden" name="ingredienteseditar_'+ingrediente.id+'" value="' + ingrediente.cantidad + '">' +
             '<td><button id="'+ingrediente.id+'" class="btnEliminar"><i class="fa-solid fa-trash" style="color: #c12525;"></i></button></td>' +
             '</tr>';
