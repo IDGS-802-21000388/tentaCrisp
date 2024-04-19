@@ -4,7 +4,7 @@
 {% block content %}
 <p id="titleP">Recetas</p>
 <div id="bodyTabla">
-    <div id="#containerProductos" style="width: -moz-available;">
+    <div id="#containerProductos" style="width: -moz-available; "><!--style="width: -moz-available;display: grid;justify-content: center;"-->
         <div class="table-container">
             <table id="tblProductos" class="table table-hover table-sm">
                 <thead>
@@ -32,7 +32,7 @@
                         <td>{{ producto['precioProduccion'] }}</td>
                         <td>{{ producto['precioVenta'] }}</td>
                         <td>
-                            <form method="POST" action="/eliminar_logica_producto" class="eliminarForm">
+                            <form method="POST" action="/produccion/eliminar_logica_producto" class="eliminarForm">
                                 <input type="hidden" name="id_producto_{{ producto['idProducto'] }}"
                                     value="{{ producto['idProducto'] }}">
                                 <input type="hidden" name="fecha_vencimiento" value="{{ producto['fechaVencimiento'] }}">
@@ -46,7 +46,7 @@
                                     <input type="hidden" name="accion" value="eliminar">
                                 {% else %}
                                     <!-- Botón para activar el detalle del producto -->
-                                    <button data-fecha="{{ producto['fechaVencimiento'] }}" type="button" style="background: transparent;" class="btnActivar"
+                                    <button data-fecha="{{ producto['fechaVencimiento'] }}" type="button" style="background: transparent; border:None;" class="btnActivar"
                                         onclick="confirmarAccion('{{ producto.idProducto }}', 'activar')">
                                         <i class="fa-solid fa-check" style="color: #28a745;"></i>
                                     </button>
@@ -84,7 +84,7 @@
                         </h1>
                     </div>
                     <form class="needs-validation" id="formDataProductosNuevos" name="formDataProductosNuevos"
-                        method="POST" action="/recetas" enctype="multipart/form-data">
+                        method="POST" action="/produccion/recetas" enctype="multipart/form-data">
                         <div class="modal-body" id="productoDetails">
                             <div class="container">
                                 <div class="row">
@@ -207,7 +207,7 @@
                         <h1 class="modal-title fs-5" id="modalProductoEditarLabel"><i
                                 class="fa-solid fa-cookie-bite fa-lg" style="color: #826455;"></i> Editar galleta</h1>
                     </div>
-                    <form class="needs-validation" action="/editar_producto" id="formDataProductosEditar"
+                    <form class="needs-validation" action="/produccion/editar_producto" id="formDataProductosEditar"
                         name="formDataProductosEditar" method="POST" enctype="multipart/form-data">
                         <div class="modal-body" id="productoDetails"></div>
                         <div class="container">
@@ -284,7 +284,7 @@
                                     <select style="width: 50%;" id="txtIngredientes_editar" name="ingrediente"
                                         class="form-select" aria-label="Default select example">
                                         {% for ingrediente in ingredientes %}
-                                        <option id="{{ ingrediente.idMateriaPrima }}"
+                                        <option medida="{{ingrediente.tipoMedida}}" id="{{ ingrediente.idMateriaPrima }}"
                                             value="{{ ingrediente.idMateriaPrima }}">{{ ingrediente.nombreMateria }}
                                         </option>
                                         {% endfor %}

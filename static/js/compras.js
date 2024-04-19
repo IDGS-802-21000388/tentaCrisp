@@ -34,7 +34,7 @@ $(document).ready(function() {
         var total = 0;
         table.rows({search: 'applied'}).every(function() {
             var rowData = this.data();
-            var totalFila = parseFloat(rowData[6]);
+            var totalFila = parseFloat(rowData[5]);
             total += totalFila;
         });
 

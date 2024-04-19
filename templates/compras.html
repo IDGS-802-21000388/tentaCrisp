@@ -33,7 +33,6 @@
                     <th>Fecha Vencimiento</th>
                     <th>Proveedor</th>
                     <th>Cantidad</th>
-                    <th>Precio</th>
                     <th>Total</th>
                 </tr>
             </thead>
@@ -41,18 +40,17 @@
                 {% for compra in compras %}
                     <tr>
                         <td>{{ compra.materia_prima.nombreMateria }}</td>
-                        <td>{{ compra.fechaCompra }}</td>
-                        <td>{{ compra.fechaVencimiento }}</td>
+                        <td>{{ compra.fecha_compra }}</td>
+                        <td>{{ compra.fecha_vencimiento }}</td>
                         <td>{{ compra.materia_prima.proveedor.nombreProveedor }}</td>
                         <td>{{ compra.cantidadExistentes | float }}</td>
                         <td>{{ compra.materia_prima.precioCompra | float }}</td>
-                        <td>{{ (compra.cantidadExistentes | float) * (compra.materia_prima.precioCompra | float) }}</td>
                     </tr>
                 {% endfor %}
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="6" class="text-end"><strong>Total:</strong></td>
+                    <td colspan="5" class="text-end"><strong>Total:</strong></td>
                     <td class="text-end"><strong id="total">0.00</strong></td>
                 </tr>
             </tfoot>
@@ -60,7 +58,7 @@
     </div>
 
     <div class="mt-5" id="grafica-container" style="display: none;">
-        <h2>Galletas más Vendidas</h2>
+        <h2>Materia Prima más Comprada</h2>
         <img src="{{ img_url }}" alt="Gráfica de Compras" class="img-fluid">
     </div>
 
