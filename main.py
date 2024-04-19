@@ -2,7 +2,7 @@ import forms, ssl, json, re, html2text, pandas as pd, os, matplotlib
 from flask import Flask, request, render_template, flash, redirect, url_for, jsonify, make_response, send_file , abort
 from flask_wtf.csrf import CSRFProtect
 from config import DevelopmentConfig
-from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Detalle_materia_prima, Medida,LogsUser, Venta, DetalleVenta, Detalle_materia_prima, Detalle_producto, Proveedor, Merma, Compra, merma_inventario
+from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Detalle_materia_prima, Medida,LogsUser, Venta, DetalleVenta, Detalle_materia_prima, Detalle_producto, Proveedor, Merma, Compra, merma_inventario, solicitudProduccion
 from sqlalchemy import func
 from functools import wraps
 from flask_cors import CORS , cross_origin
