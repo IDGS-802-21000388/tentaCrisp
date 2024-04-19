@@ -2,7 +2,7 @@ import forms, ssl, json, re, html2text, pandas as pd, os, matplotlib
 from flask import Flask, request, render_template, flash, redirect, url_for, jsonify, make_response, send_file , abort
 from flask_wtf.csrf import CSRFProtect
 from config import DevelopmentConfig
-from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Detalle_materia_prima, Medida,LogsUser, Venta, DetalleVenta, Detalle_materia_prima, Detalle_producto, Proveedor, Merma, Compra, merma_inventario
+from models import db, Usuario, MateriaPrima, Proveedor, Producto, Detalle_producto, Detalle_materia_prima, Medida,LogsUser, Venta, DetalleVenta, Detalle_materia_prima, Detalle_producto, Proveedor, Merma, Compra, merma_inventario, solicitudProduccion
 from sqlalchemy import func
 from functools import wraps
 from flask_cors import CORS , cross_origin
@@ -67,6 +67,12 @@ def admin_required(f):
 def ventas_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        print(current_user.rol)
+        if current_user.rol == 'Administrador' or current_user.rol == 'Ventas':
+            return f(*args, **kwargs)
+        else:
+            flash('No tienes permisos', 'warning')
+            return redirect(url_for('index'))
         if current_user.rol != 'Administrador':
             if current_user.rol != 'Ventas' or current_user.rol != 'Administrador':
                 flash('No tienes permisos', 'warning')
@@ -78,12 +84,12 @@ def ventas_required(f):
 def produccion_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if current_user.rol != 'Administrador':
-            if current_user.rol != 'Produccion':
-                flash('No tienes permisos', 'warning')
-                return redirect(url_for('index'))
+        print(current_user.rol)
+        if current_user.rol == 'Administrador' or current_user.rol == 'Produccion':
             return f(*args, **kwargs)
-        return f(*args, **kwargs)
+        else:
+            flash('No tienes permisos', 'warning')
+            return redirect(url_for('index'))
     return decorated_function
 
 @app.route('/', methods=['GET', 'POST'])
@@ -1944,6 +1950,32 @@ def generar_pdf(datos, fecha_compra, comprador, empresa):
     response = make_response(send_file(pdf_filename, as_attachment=True))
     response.headers['Content-Disposition'] = 'attachment; filename=venta.pdf'
     return response
+
+@app.route('/solicitud_lote',methods=['GET', 'POST'])
+@login_required
+@admin_required
+def solicitud_lote():
+    id_producto = request.form.get('idProducto-lote')
+    cantidad_producto = request.form.get('cantidad-lotes')
+    fecha = datetime.now()
+    print ("id_producto " ,id_producto)
+    print ("cantidad_producto ", cantidad_producto)
+    print ("fecha" , fecha)
+
+    nueva_solicitud = solicitudProduccion(
+            cantidadProduccion=cantidad_producto,
+            fechaSolicitud=fecha,
+            idProducto=id_producto
+        )
+    db.session.add(nueva_solicitud)
+
+    db.session.commit()
+    flash("Solicitud Enviada")
+
+
+    return redirect(url_for('punto_de_venta'))
+
+
 
 @app.route('/logs')
 @login_required
