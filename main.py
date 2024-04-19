@@ -74,23 +74,22 @@ def ventas_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         print(current_user.rol)
-        if current_user.rol != 'Administrador':
-            if current_user.rol != 'Ventas' or current_user.rol != 'Administrador':
-                flash('No tienes permisos', 'warning')
-                return redirect(url_for('index'))
+        if current_user.rol == 'Administrador' or current_user.rol == 'Ventas':
             return f(*args, **kwargs)
-        return f(*args, **kwargs)
+        else:
+            flash('No tienes permisos', 'warning')
+            return redirect(url_for('index'))
     return decorated_function
 
 def produccion_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if current_user.rol != 'Administrador':
-            if current_user.rol != 'Produccion':
-                flash('No tienes permisos', 'warning')
-                return redirect(url_for('index'))
+        print(current_user.rol)
+        if current_user.rol == 'Administrador' or current_user.rol == 'Produccion':
             return f(*args, **kwargs)
-        return f(*args, **kwargs)
+        else:
+            flash('No tienes permisos', 'warning')
+            return redirect(url_for('index'))
     return decorated_function
 
 @app.route('/', methods=['GET', 'POST'])
@@ -1552,6 +1551,8 @@ def eliminar_logica_produccion():
 
 @app.route('/productos', methods=['GET', 'POST'])
 @login_required
+@produccion_required
+
 def productos():
     productos = []
     products = []
@@ -2279,6 +2280,32 @@ def generar_pdf(datos, fecha_compra, comprador, empresa):
     response = make_response(send_file(pdf_filename, as_attachment=True))
     response.headers['Content-Disposition'] = 'attachment; filename=venta.pdf'
     return response
+
+@app.route('/solicitud_lote',methods=['GET', 'POST'])
+@login_required
+@admin_required
+def solicitud_lote():
+    id_producto = request.form.get('idProducto-lote')
+    cantidad_producto = request.form.get('cantidad-lotes')
+    fecha = datetime.now()
+    print ("id_producto " ,id_producto)
+    print ("cantidad_producto ", cantidad_producto)
+    print ("fecha" , fecha)
+
+    nueva_solicitud = solicitudProduccion(
+            cantidadProduccion=cantidad_producto,
+            fechaSolicitud=fecha,
+            idProducto=id_producto
+        )
+    db.session.add(nueva_solicitud)
+
+    db.session.commit()
+    flash("Solicitud Enviada")
+
+
+    return redirect(url_for('punto_de_venta'))
+
+
 
 @app.route('/logs')
 @login_required

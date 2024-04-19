@@ -1,9 +1,18 @@
-const preciosGalleta = {};
+let precioGalleta = 0;
 let subtotales = {};
+let preciosData = [];
 
 function agregarAlCarrito(event, idProducto, nombreProducto, precioProducto) {
     precioGalleta = precioProducto;
-    const precioGalleta = preciosGalleta[idProducto] || precioProducto;
+
+    let precioData = {
+        idProducto: idProducto,
+        nombreProducto: nombreProducto,
+        precioProducto: precioProducto
+    };
+    preciosData.push(precioData);
+    console.log(preciosData);
+
     console.log(precioGalleta);
     event.preventDefault();
     
@@ -60,6 +69,13 @@ function eliminarGalleta(idProducto) {
     }
 }
 
+function buscarPrecioPorId(id) {
+    // Utiliza el método find para buscar el precio con el ID dado
+    const precioEncontrado = preciosData.find(precio => precio.idProducto === id);
+    
+    // Si se encuentra el precio, devuélvelo; de lo contrario, devuelve null
+    return precioEncontrado ? precioEncontrado.precioProducto : null;
+}
 
 function actualizarSubtotal(idProducto, nuevaCantidad, precioProducto) {
     const subtotal = nuevaCantidad * precioProducto;
@@ -70,17 +86,21 @@ function actualizarSubtotal(idProducto, nuevaCantidad, precioProducto) {
 }
 
 function actualizarPiezas(idProducto, nuevaCantidad) {
+    console.log("idProducto: " + idProducto);
+
+    const precioEncontrado = buscarPrecioPorId(idProducto);
+    
     const cantidadPiezas = parseInt(document.getElementById(`fila-${idProducto}`).querySelector('input[name="cantidad"]').value);
     const cantidadCajas700g = parseInt(document.getElementById(`fila-${idProducto}`).querySelector('input[name="caja700g"]').value);
     const cantidadCajas1kg = parseInt(document.getElementById(`fila-${idProducto}`).querySelector('input[name="caja1k"]').value);
     const cantidadGramos = parseInt(document.getElementById(`fila-${idProducto}`).querySelector('input[name="gramos"]').value);
     console.log(cantidadPiezas , cantidadCajas700g , cantidadCajas1kg , cantidadGramos);
 
-    
-    let subtotal700g = cantidadCajas700g * (precioGalleta * 35);
-    let subtotal1kg = cantidadCajas1kg *(precioGalleta * 50);
-    let subtotalGramos = parseInt(cantidadGramos / 20) * precioGalleta;
-    let subtotalProducto = ((cantidadPiezas * 5) + subtotal700g + subtotal1kg + subtotalGramos) ;
+
+    let subtotal700g = cantidadCajas700g * (precioEncontrado * 35);
+    let subtotal1kg = cantidadCajas1kg *(precioEncontrado * 50);
+    let subtotalGramos = parseInt(cantidadGramos / 20) * precioEncontrado;
+    let subtotalProducto = ((cantidadPiezas * precioEncontrado) + subtotal700g + subtotal1kg + subtotalGramos) ;
     console.log(subtotalProducto , cantidadPiezas , subtotal700g , subtotal1kg , subtotalGramos , precioGalleta);
     //const subtotalProducto = (cantidadPiezas + cantidadCajas700g * 35 + cantidadCajas1kg * 50 + cantidadGramos / 20) * precioGalleta;
     
@@ -94,16 +114,18 @@ function actualizarPiezas(idProducto, nuevaCantidad) {
 }
 
 function actualizarCaja700g(idProducto, nuevaCantidad) {
+    console.log("idProducto: " + idProducto);
+    const precioEncontrado = buscarPrecioPorId(idProducto);
     const cantidadPiezas = parseInt(document.getElementById(`fila-${idProducto}`).querySelector('input[name="cantidad"]').value);
     const cantidadCajas700g = parseInt(document.getElementById(`fila-${idProducto}`).querySelector('input[name="caja700g"]').value);
     const cantidadCajas1kg = parseInt(document.getElementById(`fila-${idProducto}`).querySelector('input[name="caja1k"]').value);
     const cantidadGramos = parseInt(document.getElementById(`fila-${idProducto}`).querySelector('input[name="gramos"]').value);
     console.log(cantidadPiezas , cantidadCajas700g , cantidadCajas1kg , cantidadGramos);
 
-    let subtotal700g = cantidadCajas700g * (precioGalleta * 35);
-    let subtotal1kg = cantidadCajas1kg *(precioGalleta * 50);
-    let subtotalGramos = parseInt(cantidadGramos / 20) * precioGalleta;
-    let subtotalProducto = ((cantidadPiezas * 5) + subtotal700g + subtotal1kg + subtotalGramos) ;
+    let subtotal700g = cantidadCajas700g * (precioEncontrado * 35);
+    let subtotal1kg = cantidadCajas1kg *(precioEncontrado * 50);
+    let subtotalGramos = parseInt(cantidadGramos / 20) * precioEncontrado;
+    let subtotalProducto = ((cantidadPiezas * precioEncontrado) + subtotal700g + subtotal1kg + subtotalGramos) ;
     console.log(subtotalProducto , cantidadPiezas , subtotal700g , subtotal1kg , subtotalGramos , precioGalleta);
     //const subtotalProducto = (cantidadPiezas + cantidadCajas700g * 35 + cantidadCajas1kg * 50 + cantidadGramos / 20) * precioGalleta;
     
@@ -117,16 +139,19 @@ function actualizarCaja700g(idProducto, nuevaCantidad) {
 }
 
 function actualizarCaja1kg(idProducto, nuevaCantidad) {
+    console.log("idProducto: " + idProducto);
+    const precioEncontrado = buscarPrecioPorId(idProducto);
     const cantidadPiezas = parseInt(document.getElementById(`fila-${idProducto}`).querySelector('input[name="cantidad"]').value);
     const cantidadCajas700g = parseInt(document.getElementById(`fila-${idProducto}`).querySelector('input[name="caja700g"]').value);
     const cantidadCajas1kg = parseInt(document.getElementById(`fila-${idProducto}`).querySelector('input[name="caja1k"]').value);
     const cantidadGramos = parseInt(document.getElementById(`fila-${idProducto}`).querySelector('input[name="gramos"]').value);
     console.log(cantidadPiezas , cantidadCajas700g , cantidadCajas1kg , cantidadGramos);
     
-    let subtotal700g = cantidadCajas700g * (precioGalleta * 35);
-    let subtotal1kg = cantidadCajas1kg *(precioGalleta * 50);
-    let subtotalGramos = parseInt(cantidadGramos / 20) * precioGalleta;
-    let subtotalProducto = ((cantidadPiezas * 5) + subtotal700g + subtotal1kg + subtotalGramos) ;
+    let subtotal700g = cantidadCajas700g * (precioEncontrado * 35);
+    let subtotal1kg = cantidadCajas1kg *(precioEncontrado * 50);
+    let subtotalGramos = parseInt(cantidadGramos / 20) * precioEncontrado;
+    let subtotalProducto = ((cantidadPiezas * precioEncontrado) + subtotal700g + subtotal1kg + subtotalGramos) ;
+    console.log(subtotalProducto , cantidadPiezas , subtotal700g , subtotal1kg , subtotalGramos , precioGalleta);
     //const subtotalProducto = (cantidadPiezas + cantidadCajas700g * 35 + cantidadCajas1kg * 50 + cantidadGramos / 20) * precioGalleta;
     
     document.getElementById(`subtotal-${idProducto}`).textContent = `$${subtotalProducto.toFixed(2)}`;
@@ -139,16 +164,19 @@ function actualizarCaja1kg(idProducto, nuevaCantidad) {
 }
 
 function actualizarGramos(idProducto, nuevaCantidad) {
+    console.log("idProducto: " + idProducto);
+    const precioEncontrado = buscarPrecioPorId(idProducto);
     const cantidadPiezas = parseInt(document.getElementById(`fila-${idProducto}`).querySelector('input[name="cantidad"]').value);
     const cantidadCajas700g = parseInt(document.getElementById(`fila-${idProducto}`).querySelector('input[name="caja700g"]').value);
     const cantidadCajas1kg = parseInt(document.getElementById(`fila-${idProducto}`).querySelector('input[name="caja1k"]').value);
     const cantidadGramos = parseInt(document.getElementById(`fila-${idProducto}`).querySelector('input[name="gramos"]').value);
     console.log(cantidadPiezas , cantidadCajas700g , cantidadCajas1kg , cantidadGramos);
     
-    let subtotal700g = cantidadCajas700g * (precioGalleta * 35);
-    let subtotal1kg = cantidadCajas1kg *(precioGalleta * 50);
-    let subtotalGramos = parseInt(cantidadGramos / 20) * precioGalleta;
-    let subtotalProducto = ((cantidadPiezas * 5) + subtotal700g + subtotal1kg + subtotalGramos) ;
+    let subtotal700g = cantidadCajas700g * (precioEncontrado * 35);
+    let subtotal1kg = cantidadCajas1kg *(precioEncontrado * 50);
+    let subtotalGramos = parseInt(cantidadGramos / 20) * precioEncontrado;
+    let subtotalProducto = ((cantidadPiezas * precioEncontrado) + subtotal700g + subtotal1kg + subtotalGramos) ;
+    console.log(subtotalProducto , cantidadPiezas , subtotal700g , subtotal1kg , subtotalGramos , precioGalleta);
     //const subtotalProducto = (cantidadPiezas + cantidadCajas700g * 35 + cantidadCajas1kg * 50 + cantidadGramos / 20) * precioGalleta;
     
     document.getElementById(`subtotal-${idProducto}`).textContent = `$${subtotalProducto.toFixed(2)}`;
@@ -212,3 +240,11 @@ function limpiarTabla() {
 document.getElementById("btnLimpiar").addEventListener("click", function() {
     limpiarTabla();
 });
+
+function abrirModalSolicitud() {
+    document.getElementById('modalSolicitud').style.display = 'block';
+}
+
+function cerrarModal() {
+    document.getElementById('modalSolicitud').style.display = 'none';
+}
