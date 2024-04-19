@@ -33,8 +33,8 @@ class ProveedorForm(Form):
     
 class NuevaGalletaForm(FlaskForm):
     nombre_galleta = StringField('Nombre de la galleta', validators=[DataRequired(message='Favor de ingresar el nombre'), Length(min=1, max=40, message='Ingresa un nombre válido')])
-    precio_produccion = DecimalField('Precio de producción', validators=[DataRequired(message='Favor de ingresar el precio de producción')])
-    precio_venta = DecimalField('Precio de venta', validators=[DataRequired(message='Favor de ingresar el precio de venta')])
+    precio_produccion = DecimalField('Precio de producción', validators=[DataRequired(message='Favor de ingresar el precio de producción'), validators.NumberRange(min=0, max=1000000, message='El precio de producción debe ser un valor positivo')])
+    precio_venta = DecimalField('Precio de venta', validators=[DataRequired(message='Favor de ingresar el precio de venta'), validators.NumberRange(min=0, max=1000000, message='El precio de venta debe ser un valor positivo')])
     fotografia = FileField('Fotografía')
     fechaCaducidad = DateField('Fecha de Caducidad', validators=[validators.DataRequired()])
 

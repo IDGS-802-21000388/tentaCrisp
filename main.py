@@ -41,7 +41,10 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 @login_manager.user_loader
 def load_user(user_id):
-    return Usuario.query.get(int(user_id))
+    if Usuario.query.get(int(user_id)):
+        return Usuario.query.get(int(user_id))
+    else:
+        return 0
 
 @app.errorhandler(404)
 def page_not_found(e):

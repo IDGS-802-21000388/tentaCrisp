@@ -61,8 +61,6 @@
                         </div>
                     </form>
 
-
-
                     <form id="formTerminarProduccion" action="/produccion/terminar_produccion" class="needs-validation" method="POST">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                         <input type="hidden" id="productoSeleccionadoProd" name="productoSeleccionadoProd">
@@ -230,6 +228,14 @@
         </div>
     </div>
 </div>
+<style>
+    #nombreProducir,
+    #cantidadProducir {
+        pointer-events: none;
+        background-color: #f0f0f0;
+    }
+</style>
+
 <script>
     var selectGalleta = document.getElementById('txtGalleta');
     var productoSeleccionadoInput = document.getElementById('productoSeleccionado');

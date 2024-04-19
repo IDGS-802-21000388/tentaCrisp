@@ -91,6 +91,7 @@ class Merma(db.Model):
     idMerma = db.Column(db.Integer, primary_key=True, autoincrement=True)
     cantidadMerma= db.Column(db.Float, nullable=False, default=0.0)
     fechaMerma = db.Column(db.DateTime)
+    descripcion = db.Column(db.String(100), nullable=False, default="")
     idProducto = db.Column(db.Integer, db.ForeignKey('producto.idProducto'))
     idDetalle_producto = db.Column(db.Integer, db.ForeignKey('detalle_producto.idDetalle_producto'))
 
