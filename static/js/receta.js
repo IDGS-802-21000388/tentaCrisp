@@ -4,7 +4,15 @@ $(document).ready(function() {
         var ingredienteSeleccionado = $('#txtIngredientes option:selected').text();
         var idIngredienteSeleccionado = $('#txtIngredientes option:selected').attr('id');
         var medidaIngredienteSeleccionado = $('#txtIngredientes option:selected').attr('medida');
-        
+        if (isNaN(cantidadPorcion) || cantidadPorcion=='') {
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: "Por favor ingrese una cantidad de porción antes de agregar el ingrediente."
+              });
+            return;
+        }
+
         var existingRow = $('#tbodyIngredientes').find(`td[id="${idIngredienteSeleccionado}"]`).closest('tr');
     
         if (existingRow.length > 0) {
@@ -27,6 +35,17 @@ $(document).ready(function() {
         }
     });
     
+    $("#btnGuardarNuevoPermiso").click(function () {
+        var fotografia = $("#fotografiaInput").val();
+        if (fotografia.trim() === '') {
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: "Por favor seleccione una fotografía antes de guardar."
+              });
+            return;
+        }
+    });
 
     $('#btnIngredientesEditar').click(function() {
         var cantidadPorcion = parseFloat($("#txtCantidadPorcionEditar").val()); 
