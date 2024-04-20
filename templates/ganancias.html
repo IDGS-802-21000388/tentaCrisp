@@ -29,7 +29,7 @@
   </form>
   {% if total_ventas is not none or total_compras is not none %}
     <div class="mt-5" id="grafica-container">
-      <img src="{{ url_for('static', filename='total_ventas_compras_dona.png') }}" alt="Gráfica Circular" class="img-fluid">
+      <img src="{{ url_for('static', filename='img/total_ventas_compras_dona.png') }}" alt="Gráfica Circular" class="img-fluid">
     </div>
   {% endif %}
   <div class="row justify-content-center mt-3">
@@ -52,7 +52,7 @@
     <button onclick="toggleGrafica()" class="btn btn-primary btn-block">Mostrar/Ocultar Gráfica</button>
   </div>
   <div class="col-md-3">
-    <a href="{{ url_for('ventas') }}" class="btn btn-primary btn-block">Ventas</a>
+    <a href="{{ url_for('ventas.ventas') }}" class="btn btn-primary btn-block">Ventas</a>
   </div>
 </div>
 

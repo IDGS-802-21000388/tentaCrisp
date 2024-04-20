@@ -26,8 +26,8 @@
                         <td>{{ usuario.rol }}</td>
                         <td>{{ usuario.estatus }}</td>
                         <td>
-                            <form id="eliminarUsuarioForm" action="{{ url_for('cambiar_estado_usuario', id_usuario=usuario.idUsuario) }}" method="POST">
-                                {{ form.csrf_token }}
+                            <form id="eliminarUsuarioForm" action="{{ url_for('usuarios.cambiar_estado_usuario', id_usuario=usuario.idUsuario) }}" method="POST">
+                            {{ form.csrf_token }}
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <button type="button" class="btnEliminar">
                                     <i class="fa-solid fa-trash" style="color: #c12525;"></i>
@@ -51,8 +51,8 @@
                             </div>
                             <div class="modal-body">
                                 
-                                <form class="needs-validation" action="{{ url_for('usuarios') }}" method="POST" >
-                                    {{ form.csrf_token }}
+                                <form class="needs-validation" action="{{url_for('usuarios.usuarios')}}" method="POST">
+                                {{ form.csrf_token }}
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <div class="bg-light text-danger p-3 mb-3 rounded border border-danger">
                                         <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i> <!-- Icono de advertencia -->
@@ -103,8 +103,8 @@
                                 <h1 class="modal-title fs-5"><i class="fa-solid fa-cookie-bite fa-lg" style="color: #826455;"></i> Editar Usuario</h1>
                             </div>
                             <div class="modal-body">
-                                <form class="needs-validation" action="{{ url_for('editar_usuario') }}" method="POST" >
-                                    {{ form.csrf_token }}
+                                <form class="needs-validation" action="{{url_for('usuarios.editar_usuario')}}" method="POST">
+                                {{ form.csrf_token }}
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input  type="hidden" id="editIdUsuario" name="editIdUsuario">
                                     <div class="bg-light text-danger p-3 mb-3 rounded border border-danger">
