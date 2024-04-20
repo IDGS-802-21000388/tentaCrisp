@@ -143,6 +143,28 @@ function clean(){
     document.getElementById("txtCantidad").value = "";
     document.getElementById("txtFechaVencimiento").value = "";
 }
+function bloquearTexto(event) {
+    var keyCode = event.keyCode || event.which;
+
+    if (keyCode == 8 || keyCode == 46) {
+        return;
+    }
+
+    var key = String.fromCharCode(!event.charCode ? event.which : event.charCode);
+
+    // Expresión regular que permite solo números
+    var regex = /^[0-9]+$/;
+
+    if (!regex.test(key)) {
+        event.preventDefault();
+    }
+}
+
+document.getElementById('kilos_bulto').addEventListener('keydown', bloquearTexto);
+document.getElementById('numero_piezas_caja').addEventListener('keydown', bloquearTexto);
+
+document.getElementById('kilos_bulto').addEventListener('keydown', bloquearTexto);
+document.getElementById('numero_piezas_caja').addEventListener('keydown', bloquearTexto);
 
 
 

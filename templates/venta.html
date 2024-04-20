@@ -209,7 +209,7 @@
     <input type="hidden" id="datos" name="datos" />
     <input type="hidden" name="user" value="{{ current_user.nombreUsuario }}" />
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-    <button type="submit" class="btn btn-success">Generar Venta</button>
+    <button type="submit" id="btnGenerarVenta" class="btn btn-success" disabled>Generar Venta</button>
     
 </form>
 
@@ -217,7 +217,7 @@
     <input type="hidden" id="datos2" name="datos2" />
     <input type="hidden" name="user" value="{{ current_user.nombreUsuario }}" />
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-    <button type="submit" id="btnLimpiar" class="btn btn-success">Generar Venta con Ticket</button>
+    <button type="submit" id="btnGenerarVentaTicket" class="btn btn-success" disabled>Generar Venta con Ticket</button>
     
 </form>
 

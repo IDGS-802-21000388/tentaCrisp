@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import Form
 from wtforms import StringField, PasswordField
-from wtforms.validators import DataRequired, Length, InputRequired
+from wtforms.validators import DataRequired, Length, InputRequired,  ValidationError
 from wtforms import validators ,DateField, SelectField, DecimalField, FileField
 
 
@@ -17,18 +17,29 @@ class UsuarioForm(FlaskForm):
     telefono=StringField('Telefono',[
         validators.length(min=1,max=11,message='Valor no válido')
     ])
-class InventarioForm(Form):
-    nombre = StringField('Nombre',[validators.DataRequired(message='Favor de ingresar el nombre'),validators.length(min=1,max=40,message='Ingresa nombre valido')])
-    precio = StringField('Precio Compra',[validators.DataRequired(message='Favor de ingresar el Precio'),validators.length(min=1,max=40,message='Ingresa nombre valido')])
-    cantidad = StringField('No. de Productos Totales',[validators.DataRequired(message='Favor de ingresar la cantidad'),validators.length(min=1,max=40,message='Ingresa cantidad valida')])
+
+
+def texto_valido(form, field):
+    if not field.data.isalpha():
+        raise ValidationError('Este campo solo puede contener texto.')
+
+def numero_valido(form, field):
+    if not field.data.isnumeric():
+        raise ValidationError('Este campo solo puede contener números.')
+
+class InventarioForm(FlaskForm):
+    nombre = StringField('Nombre', validators=[validators.DataRequired(message='Favor de ingresar el nombre'), texto_valido])
+    precio = StringField('Precio Compra', validators=[validators.DataRequired(message='Favor de ingresar el Precio'), numero_valido])
+    cantidad = StringField('No. de Productos Totales', validators=[validators.DataRequired(message='Favor de ingresar la cantidad'), numero_valido])
     fechaVen = DateField('Fecha de Vencimiento', validators=[validators.DataRequired()])
     tipo_compra = SelectField('Tipo de compra', choices=[('bulto', 'Bulto'), ('caja', 'Caja'), ('paquete', 'Paquete'), ('unidad', 'Unidad')])
-    merma = StringField('Cantidad de Merma en Gramos',[validators.DataRequired(message='Favor de ingresar la cantidad'),validators.length(min=1,max=40,message='Ingresa cantidad valida')])
+    merma = StringField('Cantidad de Merma en Gramos', validators=[validators.DataRequired(message='Favor de ingresar la cantidad'), numero_valido])
+
 
 class ProveedorForm(Form):
-    nombreProveedor = StringField('Nombre De la Empresa', validators=[DataRequired(), Length(max=100)])
+    nombreProveedor = StringField('Nombre De la Empresa', validators=[DataRequired(), Length(max=100),texto_valido])
     direccion = StringField('Dirección', validators=[DataRequired(), Length(max=255)])
-    telefono = StringField('Teléfono', validators=[DataRequired(), Length(max=15)])
+    telefono = StringField('Teléfono', validators=[DataRequired(), Length(max=15), numero_valido])
     nombreAtiende = StringField('Repartidor', validators=[DataRequired(), Length(max=100)])
     
 class NuevaGalletaForm(FlaskForm):

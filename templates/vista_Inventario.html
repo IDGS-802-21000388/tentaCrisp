@@ -103,8 +103,7 @@
                                 class="fa-solid fa-cookie-bite fa-lg" style="color: #826455;"></i> Agregar Material
                             Prima</h1>
                     </div>
-                    <form class="needs-validation" action="{{ url_for('inventario') }}" id="formDataProductosNuevos"
-                        name="formDataProductosNuevos" method="POST">
+                    <form class="needs-validation" action="{{ url_for('inventario.inventario') }}" id="formDataProductosNuevos" method="POST">
                         <div class="modal-body" id="productoDetails"></div>
                         <div class="container">
                             <div class="row align-items-center">
@@ -134,13 +133,14 @@
 
                                     <div id="campo_extra_bulto" style="display: none;">
                                         <label for="kilos">Kilos que contiene:</label>
-                                        <input type="text" id="kilos_bulto" name="kilos_bulto">
+                                        <input type="number" id="kilos_bulto" name="kilos_bulto" pattern="[0-9]*" title="Por favor, ingrese solo números">
                                     </div>
-
+                                    
                                     <div id="campo_extra_caja" style="display: none;">
                                         <label for="numero_piezas">Kilos y/o Piezas que contiene:</label>
-                                        <input type="text" id="numero_piezas_caja" name="numero_piezas_caja">
+                                        <input type="number" id="numero_piezas_caja" name="numero_piezas_caja" pattern="[0-9]*" title="Por favor, ingrese solo números">
                                     </div>
+                                    
 
                                 </div>
 
@@ -183,7 +183,7 @@
                         <h1 class="modal-title fs-5"><i class="fa-solid fa-cookie-bite fa-lg"
                                 style="color: #826455;"></i> Editar materia Prima</h1>
                     </div>
-                    <form action="{{ url_for('editar_inventario') }}" class="needs-validation" id="formDataProductosEditar" name="formDataProductosEditar"
+                    <form action="{{ url_for('inventario.editar_inventario') }}" class="needs-validation" id="formDataProductosEditar" name="formDataProductosEditar"
                         method="POST">
                         <div class="modal-body" id="productoDetails"></div>
                         <div class="container">
@@ -214,13 +214,14 @@
 
                                     <div id="campo_extra_bulto_Edit" style="display: none;">
                                         <label for="kilos">Kilos que Contiene:</label>
-                                        <input type="text" id="kilos_bulto_edit" name="kilos_bulto_edit">
+                                        <input type="number" id="kilos_bulto_edit" name="kilos_bulto_edit" pattern="[0-9]*" title="Por favor, ingrese solo números">
                                     </div>
-
+                                    
                                     <div id="campo_extra_caja_Edit" style="display: none;">
                                         <label for="numero_piezas">Kilos y/o Piezas que Contiene:</label>
-                                        <input type="text" id="numero_piezas_caja_edit" name="numero_piezas_caja_edit">
+                                        <input type="number" id="numero_piezas_caja_edit" name="numero_piezas_caja_edit" pattern="[0-9]*" title="Por favor, ingrese solo números">
                                     </div>
+                                    
 
                                 </div>
 
@@ -257,7 +258,7 @@
                         <h1 class="modal-title fs-5"><i class="fa-solid fa-cookie-bite fa-lg"
                                 style="color: #826455;"></i> Registrar Merma</h1>
                     </div>
-                    <form action="{{ url_for('registrar_merma') }}" class="needs-validation"
+                    <form action="{{ url_for('inventario.registrar_merma') }}" class="needs-validation" method="POST"
                         method="POST">
                         <div class="modal-body" id="productoDetails"></div>
                         <div class="container">

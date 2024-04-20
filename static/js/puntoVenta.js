@@ -11,9 +11,9 @@ function agregarAlCarrito(event, idProducto, nombreProducto, precioProducto) {
         precioProducto: precioProducto
     };
     preciosData.push(precioData);
-    console.log(preciosData);
+    document.getElementById('btnGenerarVenta').disabled = false;
+    document.getElementById('btnGenerarVentaTicket').disabled = false;
 
-    console.log(precioGalleta);
     event.preventDefault();
     
     const cantidadInput = event.target.querySelector('input[name="cantidad"]');
@@ -34,10 +34,10 @@ function agregarAlCarrito(event, idProducto, nombreProducto, precioProducto) {
         const fila = `
             <tr id="fila-${idProducto}">
                 <td>${nombreProducto}</td>
-                <td><input type="number" name="cantidad"  onchange="actualizarPiezas('${idProducto}', this.value)" value="${cantidad}" min="1"></td>
-                <td><input type="number" name="caja700g" value="0" min="0" onchange="actualizarCaja700g('${idProducto}', this.value)"></td>
-                <td><input type="number" name="caja1k" value="0" min="0" onchange="actualizarCaja1kg('${idProducto}', this.value)"></td>
-                <td><input type="number" name="gramos" value="0" min="0" onchange="actualizarGramos('${idProducto}', this.value)"></td>
+                <td><input type="number" name="cantidad" class="form-control" style=" width: 100px;" onchange="actualizarPiezas('${idProducto}', this.value)" value="${cantidad}" min="1"></td>
+                <td><input type="number" name="caja700g" class="form-control" style=" width: 100px;" value="0" min="0" onchange="actualizarCaja700g('${idProducto}', this.value)"></td>
+                <td><input type="number" name="caja1k" class="form-control" style=" width: 100px;" value="0" min="0" onchange="actualizarCaja1kg('${idProducto}', this.value)"></td>
+                <td><input type="number" name="gramos" class="form-control" style=" width: 100px;" value="0" min="0" onchange="actualizarGramos('${idProducto}', this.value)"></td>
                 <td id="subtotal-${idProducto}">$${(cantidad * precioProducto).toFixed(2)}</td>
                 <td><button onclick="eliminarGalleta('${idProducto}')">Eliminar</button></td>
             </tr>
@@ -234,10 +234,15 @@ function limpiarTabla() {
         tabla.deleteRow(i);
     }
     document.getElementById("total").textContent = "$0.00";
+    
 }
 
 
 document.getElementById("btnLimpiar").addEventListener("click", function() {
+    limpiarTabla();
+});
+
+document.getElementById("btnGenerarVentaTicket").addEventListener("click", function() {
     limpiarTabla();
 });
 
@@ -248,3 +253,82 @@ function abrirModalSolicitud() {
 function cerrarModal() {
     document.getElementById('modalSolicitud').style.display = 'none';
 }
+
+
+function bloquearNoNumerico(event) {
+    var keyCode = event.keyCode || event.which;
+
+    // Permitir teclas de navegación y otras teclas especiales
+    if (keyCode == 8 || keyCode == 46 || keyCode == 37 || keyCode == 39 || keyCode == 9) {
+        return;
+    }
+
+    // Bloquear caracteres no numéricos
+    if (keyCode < 48 || keyCode > 57) {
+        event.preventDefault();
+    }
+}
+
+function bloquearNumerosNegativos(event) {
+    var keyCode = event.keyCode || event.which;
+
+    if (keyCode == 8 || keyCode == 46) {
+        return;
+    }
+
+    var key = String.fromCharCode(!event.charCode ? event.which : event.charCode);
+
+    // Expresión regular que permite solo números positivos o 0
+    var regex = /^[0-9]+$/;
+
+    if (!regex.test(key)) {
+        event.preventDefault();
+    }
+}
+
+// Aplicar la función a los elementos de entrada
+document.getElementsByName('cantidad')[0].addEventListener('keydown', function(event) {
+    bloquearNoNumerico(event);
+    bloquearNumerosNegativos(event);
+    bloquearNumerosNegativos2(event);
+});
+document.getElementsByName('caja700g')[0].addEventListener('keydown', function(event) {
+    bloquearNoNumerico(event);
+    bloquearNumerosNegativos(event);
+    bloquearNumerosNegativos2(event);
+});
+document.getElementsByName('caja1k')[0].addEventListener('keydown', function(event) {
+    bloquearNoNumerico(event);
+    bloquearNumerosNegativos(event);
+    bloquearNumerosNegativos2(event);
+});
+document.getElementsByName('gramos')[0].addEventListener('keydown', function(event) {
+    bloquearNoNumerico(event);
+    bloquearNumerosNegativos(event);
+    bloquearNumerosNegativos2(event);
+});
+
+function bloquearNumerosNegativos2(event) {
+    var keyCode = event.keyCode || event.which;
+
+    if (keyCode == 8 || keyCode == 46) {
+        return;
+    }
+
+    var key = String.fromCharCode(!event.charCode ? event.which : event.charCode);
+
+    // Expresión regular que permite solo números positivos o 0
+    var regex = /^[0-9]+$/;
+
+    // Permitir también el guion ( - ) solo en la primera posición  
+    if (key === '-' && this.selectionStart === 0 && !this.value.includes('-')) {
+        return;
+    }
+
+    if (!regex.test(key)) {
+        event.preventDefault();
+    }
+}
+
+
+
