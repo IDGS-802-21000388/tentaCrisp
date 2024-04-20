@@ -1,33 +1,77 @@
 $(document).ready(function() {
     $('#btnIngredientes').click(function() {
-        var cantidadPorcion = $('#txtCantidadPorcion').val();
+        var cantidadPorcion = parseFloat($('#txtCantidadPorcion').val());
         var ingredienteSeleccionado = $('#txtIngredientes option:selected').text();
         var idIngredienteSeleccionado = $('#txtIngredientes option:selected').attr('id');
         var medidaIngredienteSeleccionado = $('#txtIngredientes option:selected').attr('medida');
-                
-        var newRow = `<tr>
-                        <input type="hidden" name="ingredientes_${idIngredienteSeleccionado}" id="${idIngredienteSeleccionado}" value="${cantidadPorcion}">
-                        <td value="${ingredienteSeleccionado}" id="${idIngredienteSeleccionado}"> ${ingredienteSeleccionado} </td>
-                        <td> ${cantidadPorcion} ${medidaIngredienteSeleccionado} </td>
-                        <td><button id="${idIngredienteSeleccionado}" class="btnEliminar"><i class="fa-solid fa-trash" style="color: #c12525;"></i></button></td>
-                    </tr>`;
-        $('#tbodyIngredientes').append(newRow);  
+        if (isNaN(cantidadPorcion) || cantidadPorcion=='') {
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: "Por favor ingrese una cantidad de porción antes de agregar el ingrediente."
+              });
+            return;
+        }
+
+        var existingRow = $('#tbodyIngredientes').find(`td[id="${idIngredienteSeleccionado}"]`).closest('tr');
+    
+        if (existingRow.length > 0) {
+            var cantidadText = existingRow.find('td').eq(1).text().trim();
+            var existingCantidad = parseFloat(cantidadText.split(" ")[0]);
+            var nuevaCantidad = existingCantidad + cantidadPorcion;
+            existingRow.find('td').eq(1).text(`${nuevaCantidad}
+             ${medidaIngredienteSeleccionado}`);
+            existingRow.find('input').val(nuevaCantidad);
+            $(`#${idIngredienteSeleccionado}`).val(nuevaCantidad);
+
+        } else {
+            var newRow = `<tr>
+                            <input type="hidden" name="ingredientes_${idIngredienteSeleccionado}" id="${idIngredienteSeleccionado}" value="${cantidadPorcion}">
+                            <td id="${idIngredienteSeleccionado}"> ${ingredienteSeleccionado} </td>
+                            <td> ${cantidadPorcion} ${medidaIngredienteSeleccionado} </td>
+                            <td><button id="${idIngredienteSeleccionado}" class="btnEliminar"><i class="fa-solid fa-trash" style="color: #c12525;"></i></button></td>
+                        </tr>`;
+            $('#tbodyIngredientes').append(newRow);
+        }
+    });
+    
+    $("#btnGuardarNuevoPermiso").click(function () {
+        var fotografia = $("#fotografiaInput").val();
+        if (fotografia.trim() === '') {
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: "Por favor seleccione una fotografía antes de guardar."
+              });
+            return;
+        }
     });
 
     $('#btnIngredientesEditar').click(function() {
-        var cantidadPorcion = $("#txtCantidadPorcionEditar").val(); 
+        var cantidadPorcion = parseFloat($("#txtCantidadPorcionEditar").val()); 
         var ingredienteSeleccionado = $('#txtIngredientes_editar option:selected').text();
         var idIngredienteSeleccionado = $('#txtIngredientes_editar option:selected').attr('id');
         var medidaIngredienteSeleccionado = $('#txtIngredientes_editar option:selected').attr('medida');
-        var newRow = `<tr>
-                        <input type="hidden" name="ingredienteseditar_${idIngredienteSeleccionado}" id="${idIngredienteSeleccionado}" value="${cantidadPorcion}">
-                        <td value="${ingredienteSeleccionado}" id="${idIngredienteSeleccionado}"> ${ingredienteSeleccionado} </td>
-                        <td> ${cantidadPorcion} ${medidaIngredienteSeleccionado}</td>
-                        <td><button id="${idIngredienteSeleccionado}" class="btnEliminar"><i class="fa-solid fa-trash" style="color: #c12525;"></i></button></td>
-                    </tr>`;
-        $('#tblIngredientesEditar tbody').append(newRow);  
-    });
+        
+        var existingRow = $('#tblIngredientesEditar tbody').find(`td[id="${idIngredienteSeleccionado}"]`).closest('tr');
     
+        if (existingRow.length > 0) {
+            var cantidadText = existingRow.find('td').eq(1).text().trim();
+            var existingCantidad = parseFloat(cantidadText.split(" ")[0]);
+            var nuevaCantidad = existingCantidad + cantidadPorcion;
+            existingRow.find('td').eq(1).text(`${nuevaCantidad} ${medidaIngredienteSeleccionado}`); // Actualizar cantidad
+            existingRow.find('input').val(nuevaCantidad);
+        } else {
+            var newRow = `<tr>
+                            <input type="hidden" name="ingredienteseditar_${idIngredienteSeleccionado}" id="${idIngredienteSeleccionado}" value="${cantidadPorcion}">
+                            <td value="${ingredienteSeleccionado}" id="${idIngredienteSeleccionado}"> ${ingredienteSeleccionado} </td>
+                            <td> ${cantidadPorcion} ${medidaIngredienteSeleccionado}</td>
+                            <td><button id="${idIngredienteSeleccionado}" class="btnEliminar"><i class="fa-solid fa-trash" style="color: #c12525;"></i></button></td>
+                        </tr>`;
+            $('#tblIngredientesEditar tbody').append(newRow);  
+        }
+    });
+        
     $(document).on('click', '.btnEliminar', function(){
         event.preventDefault();
         var idFila = $(this).attr('id');
@@ -115,7 +159,7 @@ $(document).on('click', '.btnEditar', function() {
     $.each(ingredientes, function(index, ingrediente) {
         var fila = '<tr>' +
             '<td>' + ingrediente.nombre + '</td>' +
-            '<td>' + ingrediente.cantidad + " " + ingrediente.medida + '</td>'
+            '<td>' + ingrediente.cantidad + " " + ingrediente.medida + '</td>' +
             '<input type="hidden" name="ingredienteseditar_'+ingrediente.id+'" value="' + ingrediente.cantidad + '">' +
             '<td><button id="'+ingrediente.id+'" class="btnEliminar"><i class="fa-solid fa-trash" style="color: #c12525;"></i></button></td>' +
             '</tr>';

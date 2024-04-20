@@ -93,15 +93,13 @@
                                             <label id="lblNuevaGalleta" for="txtNuevaGalleta"
                                                 class="form-label col-sm-4">Nombre de la galleta:</label>
                                             <div class="col-sm-8">
-                                                {{ render_field_producto(form.nombre_galleta, placeholder='Nombre de la
-                                                galleta') }} </div>
+                                                {{ render_field_producto(form.nombre_galleta, placeholder='Nombre de la galleta') }} </div>
                                         </div>
                                         <div class="mb-3 row">
                                             <label id="lblPrecioProdGalleta" for="txtNuevaGalleta"
                                                 class="form-label col-sm-4">Precio de producción:</label>
                                             <div class="col-sm-8">
-                                                {{ render_field_producto(form.precio_produccion, placeholder='Precio de
-                                                producción') }}
+                                                {{ render_field_producto(form.precio_produccion, placeholder='Precio deproducción') }}
                                             </div>
                                         </div>
                                     </div>
@@ -119,8 +117,8 @@
                                                 <div class="col">
                                                     <label id="lblFotografiaInput" for="fotografiaInput"
                                                         class="form-label">Fotografía:</label>
-                                                    <input type="file" id="fotografiaInput" name="fotografia"
-                                                        class="form-control" onchange="mostrarImagen()">
+                                                    <input required type="file" id="fotografiaInput" name="fotografia"
+                                                        class="form-control" accept=".png, .jpeg, .jpg" onchange="mostrarImagen()">
                                                     <textarea id="base64Output" class="col-lg-8" rows="10" cols="50"
                                                         style="display: none;"></textarea>
                                                 </div>
@@ -156,7 +154,7 @@
                                                 </select>
 
                                                 <div class="form-floating ms-3">
-                                                    <input type="number" class="form-control" id="txtCantidadPorcion">
+                                                    <input required type="number" class="form-control" id="txtCantidadPorcion">
                                                 </div>
                                             </div>
                                             <div class="form-floating mb-3 d-flex justify-content-end"

@@ -48,7 +48,6 @@ def recetas():
             ingredientes_serializados.append(ingrediente_dict)
             
         ingredientes_serializados_json = json.dumps(ingredientes_serializados)
-        print(ingredientes_serializados_json)
         producto_dict = {
             'idProducto': producto.idProducto,
             'nombreProducto': producto.nombreProducto,
@@ -233,7 +232,6 @@ def getAllIngredientes():
         ingredientes_json.append(ingrediente_dict)
     return ingredientes
 
-
 # produccion
 
 @producir_page.route('/producir', methods=['POST'])
@@ -245,10 +243,41 @@ def producir():
         if id_solicitud:
             solicitud = solicitudProduccion.query.get(id_solicitud)
             if solicitud:
-                solicitud.estatus = 2
-                db.session.commit()
-                flash('Comenzó con la producción de la galleta', 'success')
-                return redirect(url_for('produccion.productos'))
+                receta = Receta.query.filter_by(idProducto=solicitud.idProducto).first()
+                if receta:
+                    detalles_receta = Detalle_receta.query.filter_by(idReceta=receta.idReceta).all()
+                    cantidad_necesaria_total = 0
+
+                    # Calcular la cantidad total necesaria de todas las materias primas
+                    for detalle in detalles_receta:
+                        materia_prima = MateriaPrima.query.get(detalle.idMateriaPrima)
+                        cantidad_necesaria = detalle.porcion * solicitud.cantidadProduccion
+                        cantidad_necesaria_total += cantidad_necesaria
+
+                    # Verificar si hay suficiente cantidad de materias primas disponibles para producir
+                    cantidad_restante = cantidad_necesaria_total
+                    for detalle in detalles_receta:
+                        materia_prima = MateriaPrima.query.get(detalle.idMateriaPrima)
+                        cantidad_necesaria = detalle.porcion * solicitud.cantidadProduccion
+
+                        # Filtrar los detalles de materia prima disponibles que pueden cubrir la cantidad necesaria
+                        detalles_materia_prima = Detalle_materia_prima.query.filter_by(idMateriaPrima=materia_prima.idMateriaPrima, estatus=1).filter(Detalle_materia_prima.cantidadExistentes >= cantidad_necesaria).all()
+
+                        if detalles_materia_prima:
+                            for detalle_mp in detalles_materia_prima:
+                                if detalle_mp.cantidadExistentes >= cantidad_restante:
+                                    # Si el detalle de materia prima actual puede cubrir la cantidad restante, comenzar la producción
+                                    solicitud.estatus = 2
+                                    db.session.commit()
+                                    flash('Comenzó con la producción de la galleta', 'success')
+                                    return redirect(url_for('produccion.productos'))
+                            # Si el detalle de materia prima actual no puede cubrir la cantidad restante, actualizar la cantidad restante
+                            cantidad_restante -= detalle_mp.cantidadExistentes
+                    flash('No hay suficiente cantidad de materias primas en existencia para producir la cantidad necesaria de galletas', 'error')
+                    return redirect(url_for('produccion.productos'))
+                else:
+                    flash('No se encontró la receta asociada al producto', 'error')
+                    return redirect(url_for('produccion.productos'))
             else:
                 return 'La solicitud de producción no existe', 404
         else:
@@ -259,49 +288,74 @@ def producir():
 @produccion_required
 def terminar_produccion():
     if request.method == 'POST':
-        print(request.form)
         cantidadProduccion = 40
         cantidadMerma = int(request.form.get('cantidadMerma')) if request.form.get('cantidadMerma') else 0
         idProducto = int(request.form.get('txtIdProductoProd')) if request.form.get('txtIdProductoProd') else 0
         fechaVencimiento = request.form.get('fechaVencimiento') if request.form.get('fechaVencimiento') else 0
+        cantidadProducirLotes = request.form.get('cantidadProducirProd') if request.form.get('cantidadProducirProd') else 0
+        cantidadProduccion = int(cantidadProducirLotes) * 40
 
-        if idProducto == 0 or fechaVencimiento == 0:
+        if idProducto == 0 or fechaVencimiento == 0 or cantidadMerma<0:
             flash('Por favor, completa todos los campos correctamente', 'error')
             return redirect(url_for('produccion.productos'))
+        
+        if cantidadMerma > int(cantidadProduccion):
+            flash('La cantidad de merma no puede ser mayor que la cantidad total producida', 'error')
+            return redirect(url_for('produccion.productos'))
+        
         detalle_producto = Detalle_producto(
             fechaVencimiento=fechaVencimiento,
-            cantidadExistentes=cantidadProduccion - cantidadMerma,
+            cantidadExistentes= int(cantidadProduccion) - cantidadMerma,
             idProducto=idProducto
         )
         db.session.add(detalle_producto)
+        db.session.commit()
+
         if cantidadMerma != 0:
             merma = Merma(
                 cantidadMerma=cantidadMerma,
-                fechaMerma = datetime.now(),
+                fechaMerma=datetime.now(),
                 idProducto=idProducto,
+                descripcion="Galletas que fueron merma durante el proceso de producción.",
                 idDetalle_producto=detalle_producto.idDetalle_producto
-            )        
+            )
             db.session.add(merma)
 
         receta = Receta.query.filter_by(idProducto=idProducto).first()
+
         if receta:
             detalles_receta = Detalle_receta.query.filter_by(idReceta=receta.idReceta).all()
             for detalle in detalles_receta:
                 materia_prima = MateriaPrima.query.get(detalle.idMateriaPrima)
-                cantidad_necesaria = detalle.porcion
-                detalle_materia_prima = Detalle_materia_prima.query.filter_by(idMateriaPrima=materia_prima.idMateriaPrima, estatus=1).filter(Detalle_materia_prima.cantidadExistentes > 0).first()
-                if detalle_materia_prima:
-                    detalle_materia_prima.cantidadExistentes -= cantidad_necesaria
-                else:
-                    flash(f'No se encontró ingriendientes en existencia para {materia_prima.nombreMateria}', 'error')
+                cantidad_necesaria = detalle.porcion * int(cantidadProducirLotes)
+                detalles_materia_prima = Detalle_materia_prima.query.filter_by(idMateriaPrima=materia_prima.idMateriaPrima, estatus=1).filter(Detalle_materia_prima.cantidadExistentes > 0).all()
+
+                for detalle_materia_prima in detalles_materia_prima:
+                    cantidad_restante = detalle_materia_prima.cantidadExistentes - cantidad_necesaria
+
+                    if cantidad_restante >= 0:
+                        detalle_materia_prima.cantidadExistentes = cantidad_restante
+                        cantidad_necesaria = 0
+                    else:
+                        cantidad_necesaria -= detalle_materia_prima.cantidadExistentes
+                        detalle_materia_prima.cantidadExistentes = 0
+
+                    if cantidad_necesaria <= 0:
+                        break
+
+                if cantidad_necesaria > 0:
+                    flash(f'No hay suficiente cantidad de {materia_prima.nombreMateria} en existencia', 'error')
                     return redirect(url_for('produccion.productos'))
+
             flash('La galletas se han horneado!', 'success')
             id_solicitud = request.form.get('productoSeleccionadoProd')
+
             if id_solicitud:
                 solicitud = solicitudProduccion.query.get(id_solicitud)
                 if solicitud:
                     solicitud.estatus = 3
                     db.session.commit()
+
             return redirect(url_for('produccion.productos'))
     else:
         flash('No se recibió una solicitud POST', 'error')
@@ -320,6 +374,16 @@ def eliminar_logica_produccion():
     if accion == 'eliminar':   
         detalle_producto = Detalle_producto.query.filter_by(idProducto=id_producto, fechaVencimiento=fecha_vencimiento).first()
         if detalle_producto:
+            merma = Merma(
+                cantidadMerma=detalle_producto.cantidadExistentes,
+                fechaMerma=datetime.now(),
+                descripcion='Galletas vencidas o por vencer',
+                idProducto=detalle_producto.idProducto,
+                idDetalle_producto=detalle_producto.idDetalle_producto
+            )
+            db.session.add(merma)
+            db.session.commit()
+
             detalle_producto.estatus = False
             db.session.commit()
             

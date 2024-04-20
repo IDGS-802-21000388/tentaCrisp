@@ -82,12 +82,6 @@ def ventas_required(f):
         else:
             flash('No tienes permisos', 'warning')
             return redirect(url_for('index'))
-        if current_user.rol != 'Administrador':
-            if current_user.rol != 'Ventas' or current_user.rol != 'Administrador':
-                flash('No tienes permisos', 'warning')
-                return redirect(url_for('index'))
-            return f(*args, **kwargs)
-        return f(*args, **kwargs)
     return decorated_function
 
 def produccion_required(f):
